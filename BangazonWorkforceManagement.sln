@@ -3,7 +3,13 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.29102.190
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BangazonWorkforceManagement", "BangazonWorkforceManagement\BangazonWorkforceManagement.csproj", "{7E582675-F4DB-4364-8096-29E519FA056C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BangazonWorkforceManagement", "BangazonWorkforceManagement\BangazonWorkforceManagement.csproj", "{7E582675-F4DB-4364-8096-29E519FA056C}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{C10F0B10-930B-4847-B3CE-14070E4627FC}"
+	ProjectSection(SolutionItems) = preProject
+		BangazonWorkforce-setup.sql = BangazonWorkforce-setup.sql
+		SeedData.sql = SeedData.sql
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
