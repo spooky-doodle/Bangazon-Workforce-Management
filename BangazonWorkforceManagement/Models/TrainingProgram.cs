@@ -13,11 +13,11 @@ namespace BangazonAPI.Models
         [Required]
         public string Name { get; set; }
         [Required]
-        [DateValidation]
+        //[DateValidation]
         public DateTime StartDate { get; set; }
 
         [Required]
-        [DateValidation]
+        //[DateValidation]
         public DateTime EndDate { get; set; }
         [Required]
         public int MaxAttendees { get; set; }
