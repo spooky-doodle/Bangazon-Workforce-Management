@@ -1,3 +1,4 @@
+﻿
 -- Department Data
 INSERT INTO Department ([Name], Budget) VALUES ('Marketing', 7613.63);
 INSERT INTO Department ([Name], Budget) VALUES ('Sales', 31221.54);
@@ -42,10 +43,10 @@ INSERT INTO ProductType ([Name]) VALUES ('Electronics');
 INSERT INTO ProductType ([Name]) VALUES ('Apparel');
 
 -- Customer Data
-INSERT INTO Customer (FirstName, LastName, LastActiveDate, CreationDate) VALUES ('Inès', 'Northeast', '12/26/2016', '1/5/2013');
-INSERT INTO Customer (FirstName, LastName, LastActiveDate, CreationDate) VALUES ('Liè', 'Dible', '10/6/2019', '4/5/2012');
-INSERT INTO Customer (FirstName, LastName, LastActiveDate, CreationDate) VALUES ('Laurène', 'Hollyman', '2/22/2018', '2/15/2014');
-INSERT INTO Customer (FirstName, LastName, LastActiveDate, CreationDate) VALUES ('Maëlle', 'Overill', '12/26/2016', '1/9/2010');
+INSERT INTO Customer (FirstName, LastName, LastActiveDate, CreationDate) VALUES ('Inès', 'Northeast', '1/10/2016', '1/1/2016');
+INSERT INTO Customer (FirstName, LastName, LastActiveDate, CreationDate) VALUES ('Liè', 'Dible', '1/10/2019', '10/9/2018');
+INSERT INTO Customer (FirstName, LastName, LastActiveDate, CreationDate) VALUES ('Laurène', 'Hollyman', '3/23/2019', '11/1/2017');
+INSERT INTO Customer (FirstName, LastName, LastActiveDate, CreationDate) VALUES ('Maëlle', 'Overill', '8/10/2019', '1/4/2018');
 
 -- Product Data
 INSERT INTO Product (ProductTypeId, CustomerId, Price, Title, [Description], Quantity) VALUES (1, 2, '$0.61', 'Honey - Liquid', 'ligula suspendisse ornare consequat lectus in est', 25);
