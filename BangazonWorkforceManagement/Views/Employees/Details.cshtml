@@ -1,0 +1,66 @@
+﻿@model BangazonAPI.Models.Employee
+
+@{
+    ViewData["Title"] = "Details";
+}
+
+<h1>Details</h1>
+
+<div>
+    <h4>Employee</h4>
+    <hr />
+    <dl class="row">
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.Id)
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.Id)
+        </dd>
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.FullName)
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.FullName)
+        </dd>
+        
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.Department)
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.Department.Name)
+        </dd>
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.IsSupervisor)
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.IsSupervisor)
+        </dd>
+        
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.Computers)
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.Computers.Count)
+        </dd>
+    </dl>
+</div>
+<tbody>
+    <ul class="list-group">
+        @foreach (var comp in Model.Computers)
+        {
+
+            <li class="list-group-item">
+                <h6>Make</h6>
+                <p>@Html.DisplayFor(modelItem => comp.Make)</p>
+                <h6>Manufacturer</h6>
+                <p>@Html.DisplayFor(modelItem => comp.Manufacturer)</p>
+                <h6>Purchase Date</h6>
+                <p>@Html.DisplayFor(modelItem => comp.PurchaseDate)</p>
+            </li>
+        }
+    </ul>
+    </tbody>
+<div>
+    @Html.ActionLink("Edit", "Edit", new { id=Model.Id }) |
+    <a asp-action="Index">Back to List</a>
+</div>

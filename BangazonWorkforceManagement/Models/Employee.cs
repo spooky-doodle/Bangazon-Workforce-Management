@@ -9,13 +9,6 @@ namespace BangazonAPI.Models
     public class Employee
     {
 
-        //Given an HR employee wants to view employees
-        //When the employee clicks on the Employees item in the navigation bar
-        //Then all current employees should be listed with the following information
-
-        //1. First name and last name
-        //2. Department
-
         [Required]
         [Display(Name = "Employee Id")]
         public int Id { get; set; }

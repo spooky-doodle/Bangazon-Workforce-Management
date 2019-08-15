@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
+using System.Data.SqlTypes;
 using System.Linq;
 using System.Threading.Tasks;
 using BangazonAPI.Models;
@@ -37,7 +38,8 @@ namespace BangazonWorkforceManagement.Controllers
         // GET: Employee/Details/5
         public ActionResult Details(int id)
         {
-            return View();
+            var employee = GetOneEmployee(id);
+            return View(employee);
         }
 
         // GET: Employee/Create
@@ -109,6 +111,89 @@ namespace BangazonWorkforceManagement.Controllers
             }
         }
 
+        private Employee GetOneEmployee(int id)
+        {
+            Employee employee = null;
+            using (SqlConnection conn = Connection)
+            {
+                conn.Open();
+
+                using (SqlCommand cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = @"SELECT e.Id, 
+                                               e.FirstName, 
+                                               e.LastName, 
+                                               e.DepartmentId, 
+                                               d.Name,
+                                               c.Make, 
+                                               c.Manufacturer, 
+                                               c.PurchaseDate, 
+                                               c.DecommissionDate
+                                        FROM Employee e
+                                        LEFT JOIN Department d
+                                        on d.Id = e.DepartmentId
+                                        LEFT JOIN ComputerEmployee ce
+                                        ON ce.EmployeeId = e.Id
+                                        LEFT JOIN Computer c
+                                        ON ce.ComputerId = c.Id
+                                        WHERE ce.UnassignDate IS NULL
+                                        AND e.Id = @id
+                                      ";
+
+                    cmd.Parameters.Add(new SqlParameter("@id", id));
+                    SqlDataReader reader = cmd.ExecuteReader();
+
+                    while (reader.Read())
+                    {
+                        if (employee == null)
+                        {
+                            employee = new Employee()
+                            {
+                                Id = reader.GetInt32(reader.GetOrdinal("Id")),
+                                FirstName = reader.GetString(reader.GetOrdinal("FirstName")),
+                                LastName = reader.GetString(reader.GetOrdinal("LastName")),
+                                DepartmentId = reader.GetInt32(reader.GetOrdinal("DepartmentId")),
+                                Department =
+                                {
+                                    Id = reader.GetInt32(reader.GetOrdinal("Id")),
+                                    Name = reader.GetString(reader.GetOrdinal("Name"))
+                                }
+
+                            };
+                        }
+
+                        try
+                        {
+                            Computer computer = new Computer()
+                            {
+                                Id = reader.GetInt32(reader.GetOrdinal("Id")),
+                                Make = reader.GetString(reader.GetOrdinal("Make")),
+                                Manufacturer = reader.GetString(reader.GetOrdinal("Manufacturer")),
+                                PurchaseDate = reader.GetDateTime(reader.GetOrdinal("PurchaseDate"))
+                        };
+                            try
+                            {
+                                computer.DecommissionDate = reader.GetDateTime(reader.GetOrdinal("DecommissionDate"));
+                                
+                            }
+                            catch (SqlNullValueException)
+                            {
+                               
+                            }
+                            employee.Computers.Add(computer);
+
+                        }
+                        catch (SqlNullValueException)
+                        {
+                            // 
+                        }
+                    }
+                    reader.Close();
+                }
+            }
+            return employee;
+        }
+
         private List<Employee> GetAllEmployees()
         {
             var employees = new List<Employee>();
@@ -116,7 +201,7 @@ namespace BangazonWorkforceManagement.Controllers
             {
                 conn.Open();
 
-                using(SqlCommand cmd = conn.CreateCommand())
+                using (SqlCommand cmd = conn.CreateCommand())
                 {
                     cmd.CommandText = @"
                                         SELECT e.Id, e.FirstName, e.LastName, e.DepartmentId, d.Name
@@ -126,7 +211,7 @@ namespace BangazonWorkforceManagement.Controllers
                                       ";
                     SqlDataReader reader = cmd.ExecuteReader();
 
-                    while(reader.Read())
+                    while (reader.Read())
                     {
                         employees.Add(new Employee()
                         {
@@ -134,12 +219,12 @@ namespace BangazonWorkforceManagement.Controllers
                             FirstName = reader.GetString(reader.GetOrdinal("FirstName")),
                             LastName = reader.GetString(reader.GetOrdinal("LastName")),
                             DepartmentId = reader.GetInt32(reader.GetOrdinal("DepartmentId")),
-                            Department = 
+                            Department =
                             {
                                 Id = reader.GetInt32(reader.GetOrdinal("Id")),
                                 Name = reader.GetString(reader.GetOrdinal("Name"))
                             }
-                    });
+                        });
                     }
                     reader.Close();
                 }
