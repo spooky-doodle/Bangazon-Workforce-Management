@@ -71,14 +71,61 @@ namespace BangazonWorkforceManagement.Controllers
             }
             return View(computers);
         }
-    
+
 
 
 
         // GET: Computers/Details/5
         public ActionResult Details(int id)
         {
-            return View();
+            Computer computer = GetComputerById(id);
+
+            return View(computer);
+        }
+
+        private Computer GetComputerById(int id)
+        {
+            Computer computer = null;
+            using (SqlConnection conn = Connection)
+            {
+                conn.Open();
+                using (SqlCommand cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = @"
+                        SELECT Id, 
+                        PurchaseDate,
+                        DecommissionDate,
+                        Make,
+                        Manufacturer
+                        FROM Computer
+                        Where Id = @Id";
+
+                    cmd.Parameters.Add(new SqlParameter("@id", id));
+                    SqlDataReader reader = cmd.ExecuteReader();
+
+                    if (reader.Read())
+                    {
+                        computer = new Computer()
+                        {
+                            Id = reader.GetInt32(reader.GetOrdinal("Id")),
+                            PurchaseDate = reader.GetDateTime(reader.GetOrdinal("PurchaseDate")),
+                            Make = reader.GetString(reader.GetOrdinal("Make")),
+                            Manufacturer = reader.GetString(reader.GetOrdinal("Manufacturer"))
+                        };
+
+                        try
+                        {
+                            computer.DecommissionDate = reader.GetDateTime(reader.GetOrdinal("DecommissionDate"));
+                        }
+                        catch (SqlNullValueException)
+                        { }  //  DecommissionDate defaults to null.
+                    }
+
+
+                }
+            }
+
+            return computer;
         }
 
         // GET: Computers/Create
@@ -130,17 +177,32 @@ namespace BangazonWorkforceManagement.Controllers
         // GET: Computers/Delete/5
         public ActionResult Delete(int id)
         {
-            return View();
+            return View(GetComputerById(id));
         }
 
-        // POST: Computers/Delete/5
+        // POST: Student/Delete/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public ActionResult Delete(int id, IFormCollection collection)
+        public ActionResult Delete(int id, Computer computer)
         {
             try
             {
-                // TODO: Add delete logic here
+                using (SqlConnection conn = Connection)
+                {
+                    conn.Open();
+
+                    using (SqlCommand cmd = conn.CreateCommand())
+                    {
+                        cmd.CommandText = @"
+                        DELETE Computer                      
+                        WHERE Id = @id
+                        ";
+
+                        cmd.Parameters.AddWithValue("@id", id);
+
+                        cmd.ExecuteNonQuery();
+                    }
+                }
 
                 return RedirectToAction(nameof(Index));
             }
