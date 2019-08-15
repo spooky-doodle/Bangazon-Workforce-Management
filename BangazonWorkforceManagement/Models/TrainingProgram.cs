@@ -1,4 +1,5 @@
-﻿using System;
+﻿using BangazonWorkforceManagement.Annotations;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
@@ -12,8 +13,11 @@ namespace BangazonAPI.Models
         [Required]
         public string Name { get; set; }
         [Required]
+        [DateValidation]
         public DateTime StartDate { get; set; }
+
         [Required]
+        [DateValidation]
         public DateTime EndDate { get; set; }
         [Required]
         public int MaxAttendees { get; set; }
