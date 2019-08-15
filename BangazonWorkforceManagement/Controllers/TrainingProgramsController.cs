@@ -50,9 +50,10 @@ namespace BangazonWorkforceManagement.Controllers
         }
 
         // GET: TrainingPrograms/Details/5
-        public ActionResult Details(int id)
+        public async Task<IActionResult> Details(int id)
         {
-            return View();
+
+            return View(await GetOneTrainingProgram(id));
         }
 
         // GET: TrainingPrograms/Create
@@ -154,6 +155,42 @@ namespace BangazonWorkforceManagement.Controllers
 
 
             return progs;
+        }
+
+        private async Task<TrainingProgram> GetOneTrainingProgram(int id)
+        {
+            TrainingProgram prog = null;
+            using (SqlConnection conn = Connection)
+            {
+                await conn.OpenAsync();
+                using (SqlCommand cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = @"SELECT 
+                    Id, [Name], StartDate, EndDate, MaxAttendees 
+                    FROM TrainingProgram 
+                    WHERE Id = @id";
+                    cmd.Parameters.AddWithValue("@id", id);
+
+                    var reader = cmd.ExecuteReader();
+
+                    if (await reader.ReadAsync())
+                    {
+                        prog = new TrainingProgram()
+                        {
+                            Id = reader.GetInt32(reader.GetOrdinal("Id")),
+                            Name = reader.GetString(reader.GetOrdinal("Name")),
+                            StartDate = reader.GetDateTime(reader.GetOrdinal("StartDate")),
+                            EndDate = reader.GetDateTime(reader.GetOrdinal("EndDate")),
+                            MaxAttendees = reader.GetInt32(reader.GetOrdinal("MaxAttendees"))
+
+                        };
+                    }
+                    else throw new Exception("No program found");
+                }
+            }
+
+
+            return prog;
         }
     }
 }
