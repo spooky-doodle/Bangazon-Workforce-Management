@@ -65,11 +65,30 @@ namespace BangazonWorkforceManagement.Controllers
         // POST: TrainingPrograms/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public ActionResult Create(IFormCollection collection)
+        public async Task<IActionResult> Create(TrainingProgram prog)
         {
             try
             {
-                // TODO: Add insert logic here
+                using (SqlConnection conn = Connection)
+                {
+                    await conn.OpenAsync();
+
+                    using (SqlCommand cmd = conn.CreateCommand())
+                    {
+                        cmd.CommandText = @"INSERT INTO TrainingProgram 
+                            ([Name], StartDate, EndDate, MaxAttendees)
+                            VALUES (@name, @startDate, @endDate, @maxAttendees)";
+
+                        cmd.Parameters.AddWithValue("@name", prog.Name);
+                        cmd.Parameters.AddWithValue("@startDate", prog.StartDate);
+                        cmd.Parameters.AddWithValue("@endDate", prog.EndDate);
+                        cmd.Parameters.AddWithValue("@maxAttendees", prog.MaxAttendees);
+
+                        await cmd.ExecuteNonQueryAsync();
+
+                    }
+
+                }
 
                 return RedirectToAction(nameof(Index));
             }
