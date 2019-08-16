@@ -5,8 +5,10 @@ using System.Data.SqlTypes;
 using System.Linq;
 using System.Threading.Tasks;
 using BangazonAPI.Models;
+using BangazonWorkforceManagement.Models.ViewModels;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.Extensions.Configuration;
 
 namespace BangazonWorkforceManagement.Controllers
@@ -92,6 +94,26 @@ namespace BangazonWorkforceManagement.Controllers
         public ActionResult Delete(int id)
         {
             return View();
+        }
+
+        // GET: Employees/Assign/5
+        public async Task<IActionResult> Assign(int id)
+        {
+            var viewModel = new AssignEmployeeTrainingViewModel();
+            viewModel.TrainingOptions = CreateTrainingSelections(await GetAvailableTrainingPrograms(id));
+            viewModel.EmployeeId = id;
+            return View(viewModel);
+        }
+
+        // POST: Employees/Assign/5
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Assign(int id, AssignEmployeeTrainingViewModel )
+        {
+            var viewModel = new AssignEmployeeTrainingViewModel();
+            viewModel.TrainingOptions = CreateTrainingSelections(await GetAvailableTrainingPrograms(id));
+            viewModel.EmployeeId = id;
+            return View(viewModel);
         }
 
         // POST: Employee/Delete/5
@@ -278,6 +300,7 @@ namespace BangazonWorkforceManagement.Controllers
                                         LEFT JOIN TrainingProgram tp
                                         ON tp.Id = et.TrainingProgramId
                                         WHERE et.EmployeeId = @id";
+                    cmd.Parameters.AddWithValue("@id", id);
                     var reader = cmd.ExecuteReader();
                     while (await reader.ReadAsync())
                     {
@@ -307,6 +330,16 @@ namespace BangazonWorkforceManagement.Controllers
             return availablePrograms;
 
             
+        }
+
+        private List<SelectListItem> CreateTrainingSelections(List<TrainingProgram> progs)
+        {
+            return progs.Select(prog => new SelectListItem()
+            {
+                Text = prog.Name,
+                Value = prog.Id.ToString()
+            }).ToList();
+
         }
 
         private async Task<List<TrainingProgram>> GetAllTrainingPrograms()
