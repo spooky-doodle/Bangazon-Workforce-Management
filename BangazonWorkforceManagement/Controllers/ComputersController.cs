@@ -4,13 +4,14 @@ using System.Data.SqlClient;
 using System.Data.SqlTypes;
 using System.Linq;
 using System.Threading.Tasks;
-using System.Web.WebPages.Html;
 using BangazonAPI.Models;
 using BangazonWorkforceManagement.Models;
 using BangazonWorkforceManagement.Models.ViewModels;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using System.Data;
 
 namespace BangazonWorkforceManagement.Controllers
 {
@@ -134,15 +135,16 @@ namespace BangazonWorkforceManagement.Controllers
         // GET: Computers/Create
         public ActionResult Create()
         {
-            var viewModel = new ComputersEmployeeViewModel();
+            var viewModel = new ComputerEmployeeViewModel();
             var employees = GetEmployees();
-            var selectItem = employees
+           List<SelectListItem> selectItem = employees
                 .Select(employee => new SelectListItem
                 {
                     Text = $"{employee.FirstName} {employee.LastName}",
                     Value = employee.Id.ToString()
                 })
                 .ToList();
+ 
 
             selectItem.Insert(0, new SelectListItem
             {
@@ -157,13 +159,14 @@ namespace BangazonWorkforceManagement.Controllers
         // POST: Computers/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public ActionResult Create(Computer computer)
+        public ActionResult Create(ComputerEmployeeViewModel computerEmployees)
         {
             try
             {
                 using (SqlConnection conn = Connection)
                 {
                     conn.Open();
+                    int computerId = 0;
 
                     using (SqlCommand cmd = conn.CreateCommand())
                     {
@@ -172,19 +175,39 @@ namespace BangazonWorkforceManagement.Controllers
                         Make,
                         Manufacturer,
                         PurchaseDate
-                        )Values(    
+                        )
+                        OUTPUT INSERTED.Id
+                        Values(   
                         @Make, 
                         @Manufacturer,
-                        @PurchaseDate
-                       )
-                    ";
+                        @PurchaseDate)";
 
-                        cmd.Parameters.AddWithValue("@Make", computer.Make);
-                        cmd.Parameters.AddWithValue("@Manufacturer", computer.Manufacturer);
-                        cmd.Parameters.AddWithValue("@PurchaseDate", computer.PurchaseDate);
+                        cmd.Parameters.AddWithValue("@Make", computerEmployees.Computer.Make);
+                        cmd.Parameters.AddWithValue("@Manufacturer", computerEmployees.Computer.Manufacturer);
+                        cmd.Parameters.AddWithValue("@PurchaseDate", computerEmployees.Computer.PurchaseDate);
+                        cmd.Parameters.AddWithValue("@ComputerId", computerEmployees.Computer.Id);
+                        computerId = (Int32)cmd.ExecuteScalar();
+
+                    }
+                    if(computerEmployees.EmployeeId > 0)
+                    { using (SqlCommand cmd = conn.CreateCommand())
+                    {
+                        cmd.CommandText = @"INSERT INTO ComputerEmployee(
+                           ComputerId,
+                           EmployeeId,
+                           AssignDate
+                           ) Values(
+                           @ComputerId,
+                           @EmployeeId,
+                           @AssignDate
+                           )";
+                        cmd.Parameters.AddWithValue("@EmployeeId", computerEmployees.EmployeeId);
+                        cmd.Parameters.AddWithValue("@ComputerId", computerId);
+                        cmd.Parameters.Add(new SqlParameter("@AssignDate", SqlDbType.DateTime) { Value = DateTime.Today });
 
                         cmd.ExecuteNonQuery();
-                    }
+                    } }
+
                 }
                 return RedirectToAction(nameof(Index));
             }
