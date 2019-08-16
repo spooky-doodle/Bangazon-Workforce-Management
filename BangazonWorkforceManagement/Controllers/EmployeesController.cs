@@ -11,8 +11,6 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.Extensions.Configuration;
-using BangazonWorkforceManagement.Models.ViewModels;
-using Microsoft.AspNetCore.Mvc.Rendering;
 
 namespace BangazonWorkforceManagement.Controllers
 {
@@ -343,32 +341,6 @@ namespace BangazonWorkforceManagement.Controllers
             }
             return employees;
         }
-        public List<Department> GetAllDepartments()
-        {
-            var departments = new List<Department>();
-            using (SqlConnection conn = Connection)
-            {
-                conn.Open();
-                using (SqlCommand cmd = conn.CreateCommand())
-                {
-                    cmd.CommandText = @"SELECT d.Id, d.Name, d.Budget FROM Department AS d ";
-
-                    SqlDataReader reader = cmd.ExecuteReader();
-
-                    while (reader.Read())
-                    {
-                        departments.Add(new Department()
-                        {
-                            Id = reader.GetInt32(reader.GetOrdinal("Id")),
-                            Name = reader.GetString(reader.GetOrdinal("Name")),
-                            Budget = reader.GetInt32(reader.GetOrdinal("Budget"))
-                        });
-                    }
-                    reader.Close();
-                }
-            }
-            return departments;
-        }
 
         private async Task<List<TrainingProgram>> GetEmployeeTrainingPrograms(int id)
         {
@@ -466,6 +438,32 @@ namespace BangazonWorkforceManagement.Controllers
                 EndDate = reader.GetDateTime(reader.GetOrdinal("EndDate")),
                 MaxAttendees = reader.GetInt32(reader.GetOrdinal("MaxAttendees"))
             };
+        }
+        public List<Department> GetAllDepartments()
+        {
+            var departments = new List<Department>();
+            using (SqlConnection conn = Connection)
+            {
+                conn.Open();
+                using (SqlCommand cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = @"SELECT d.Id, d.Name, d.Budget FROM Department AS d ";
+
+                    SqlDataReader reader = cmd.ExecuteReader();
+
+                    while (reader.Read())
+                    {
+                        departments.Add(new Department()
+                        {
+                            Id = reader.GetInt32(reader.GetOrdinal("Id")),
+                            Name = reader.GetString(reader.GetOrdinal("Name")),
+                            Budget = reader.GetInt32(reader.GetOrdinal("Budget"))
+                        });
+                    }
+                    reader.Close();
+                }
+            }
+            return departments;
         }
     }
 }
