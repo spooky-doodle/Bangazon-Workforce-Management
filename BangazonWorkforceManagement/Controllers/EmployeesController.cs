@@ -111,7 +111,45 @@ namespace BangazonWorkforceManagement.Controllers
         // GET: Employee/Edit/5
         public ActionResult Edit(int id)
         {
-            return View();
+            var employee = GetOneEmployee(id);
+            var departments = GetAllDepartments();
+            var computers = GetAllComputersForOneEmployee(id);
+
+            var viewModel = new EmployeeEditViewModel();
+           
+            var selectItems = departments
+                .Select(dept => new SelectListItem
+                {
+                    Text = dept.Name,
+                    Value = dept.Id.ToString()
+                })
+                .ToList();
+
+            selectItems.Insert(0, new SelectListItem
+            {
+                Text = "Choose Department...",
+                Value = "0"
+            });
+
+            //empComps
+
+            var employeeComputers = computers
+                .Select(comp => new SelectListItem
+                {
+                    Text = $"{comp.Make} {comp.Manufacturer}",
+                    Value = comp.Id.ToString()
+                })
+                .ToList();
+
+            employeeComputers.Insert(0, new SelectListItem
+            {
+                Text = "Choose Computers...",
+                Value = "0"
+            });
+
+            viewModel.Employee = employee;
+            viewModel.Departments = selectItems;
+            return View(viewModel);
         }
 
         // POST: Employee/Edit/5
@@ -330,6 +368,52 @@ namespace BangazonWorkforceManagement.Controllers
                 }
             }
             return departments;
+        }
+
+        public List<Computer> GetAllComputersForOneEmployee(int id)
+        {
+            var computers = new List<Computer>();
+            using (SqlConnection conn = Connection)
+            {
+                conn.Open();
+                using (SqlCommand cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = @"SELECT 
+                                            c.Id, 
+                                            c.PurchaseDate, 
+                                            c.DecommissionDate, 
+                                            c.Make, 
+                                            c.Manufacturer, 
+                                            ce.Id AS CEId, 
+                                            ce.EmployeeId, 
+                                            ce.AssignDate, 
+                                            ce.UnassignDate, 
+                                            ce.ComputerId
+                                        FROM Computer c
+                                        LEFT JOIN ComputerEmployee ce
+                                        ON ce.ComputerId = c.Id
+                                        WHERE ce.EmployeeId = @id
+                                        AND c.DecommissionDate IS NULL
+                                        AND ce.UnassignDate IS NULL
+                                      ";
+
+                    cmd.Parameters.Add(new SqlParameter("@id", id));
+                    SqlDataReader reader = cmd.ExecuteReader();
+
+                    while (reader.Read())
+                    {
+                        computers.Add(new Computer()
+                        {
+                            Id = reader.GetInt32(reader.GetOrdinal("Id")),
+                            Make = reader.GetString(reader.GetOrdinal("Make")),
+                            Manufacturer = reader.GetString(reader.GetOrdinal("Manufacturer")),
+                            PurchaseDate = reader.GetDateTime(reader.GetOrdinal("PurchaseDate")),
+                        });
+                    }
+                    reader.Close();
+                }
+            }
+            return computers;
         }
     }
 }
