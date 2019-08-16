@@ -70,8 +70,8 @@ namespace BangazonWorkforceManagement.Controllers
                 using (SqlCommand cmd = conn.CreateCommand())
                 {
                     cmd.CommandText = @"SELECT d.Id, d.[Name], d.[Budget], e.FirstName, e.LastName, e.DepartmentId, e.IsSupervisor
-                                        FROM Department d
-                                        LEFT JOIN Employee e ON e.DepartmentId = d.Id
+                                        FROM Department AS d
+                                        LEFT JOIN Employee AS e ON e.DepartmentId = d.Id
                                         Where d.Id = @id";
                     cmd.Parameters.AddWithValue("@id", id);
 
