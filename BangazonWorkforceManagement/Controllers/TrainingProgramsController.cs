@@ -37,10 +37,56 @@ namespace BangazonWorkforceManagement.Controllers
         }
 
         // GET: TrainingPrograms/Details/5
-        public async Task<IActionResult> Details(int id)
+        public ActionResult Details(int id)
         {
+            using (SqlConnection conn = Connection)
+            {
+                conn.Open();
+                using (SqlCommand cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = @"
+                                        SELECT 
+                                        tp.Id, tp.[Name], tp.StartDate, tp.EndDate, tp.MaxAttendees, e.FirstName, e.LastName, e.DepartmentId, e.IsSupervisor 
+                                        FROM TrainingProgram AS tp
+                                        LEFT JOIN EmployeeTraining AS et ON tp.Id = et.TrainingProgramID
+                                        LEFT JOIN Employee AS e ON et.EmployeeId = e.Id
+                                        WHERE tp.Id = @id";
+                    cmd.Parameters.AddWithValue("@id", id);
 
-            return View(await GetOneTrainingProgram(id));
+                    SqlDataReader reader = cmd.ExecuteReader();
+
+                    TrainingProgram trainingProgram = null;
+                    List<Employee> employees = new List<Employee>();
+
+                    while (reader.Read())
+                    {
+                        if (trainingProgram == null)
+                        {
+                            trainingProgram = new TrainingProgram()
+                            {
+                                Id = reader.GetInt32(reader.GetOrdinal("Id")),
+                                Name = reader.GetString(reader.GetOrdinal("Name")),
+                                StartDate = reader.GetDateTime(reader.GetOrdinal("StartDate")),
+                                EndDate = reader.GetDateTime(reader.GetOrdinal("EndDate")),
+                                MaxAttendees = reader.GetInt32(reader.GetOrdinal("MaxAttendees"))
+                            };
+                        }
+
+                        if (!reader.IsDBNull(reader.GetOrdinal("FirstName")))
+                        {
+                            employees.Add(new Employee()
+                            {
+                                FirstName = reader.GetString(reader.GetOrdinal("FirstName")),
+                                LastName = reader.GetString(reader.GetOrdinal("LastName")),
+                                DepartmentId = reader.GetInt32(reader.GetOrdinal("DepartmentId")),
+                                IsSupervisor = reader.GetBoolean(reader.GetOrdinal("IsSupervisor"))
+                            });
+                        }
+                    }
+                    trainingProgram.Attendees = employees;
+                    return View(trainingProgram);
+                }
+            }
         }
 
         // GET: TrainingPrograms/Create
@@ -127,7 +173,7 @@ namespace BangazonWorkforceManagement.Controllers
                 var progToDelete = await GetOneTrainingProgram(id);
 
                 if (progToDelete.IsCancelable == false) throw new Exception("Cannot delete events that have started");
-                
+
                 using (SqlConnection conn = Connection)
                 {
                     await conn.OpenAsync();
@@ -158,7 +204,7 @@ namespace BangazonWorkforceManagement.Controllers
                 using (SqlCommand cmd = conn.CreateCommand())
                 {
                     cmd.CommandText = "SELECT Id, [Name], StartDate, EndDate, MaxAttendees FROM TrainingProgram ";
-                    cmd.CommandText += filterText;  
+                    cmd.CommandText += filterText;
 
                     var reader = cmd.ExecuteReader();
 
