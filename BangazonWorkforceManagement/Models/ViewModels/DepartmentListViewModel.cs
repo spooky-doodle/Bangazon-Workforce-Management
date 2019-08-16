@@ -13,7 +13,7 @@ namespace BangazonWorkforceManagement.Models.ViewModels
         public string Name { get; set; }
         [Required]
         public int Budget { get; set; }
-
+        [Display(Name = "Department Size")]
         public int DepartmentSize { get; set; }
     }
 }
