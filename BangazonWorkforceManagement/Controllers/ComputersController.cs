@@ -157,29 +157,6 @@ namespace BangazonWorkforceManagement.Controllers
         // POST: Computers/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public ActionResult Create(IFormCollection collection)
-        {
-            try
-            {
-                // TODO: Add insert logic here
-
-                return RedirectToAction(nameof(Index));
-            }
-            catch
-            {
-                return View();
-            }
-        }
-
-        // GET: Computers/Edit/5
-        public ActionResult Edit(int id)
-        {
-            return View();
-        }
-
-        // POST: Computers/Edit/5
-        [HttpPost]
-        [ValidateAntiForgeryToken]
         public ActionResult Create(Computer computer)
         {
             try
@@ -191,23 +168,20 @@ namespace BangazonWorkforceManagement.Controllers
                     using (SqlCommand cmd = conn.CreateCommand())
                     {
                         cmd.CommandText = @"
-                    INSERT INTO Student(
-                        FirstName,
-                        LastName,
-                        SlackHandle,
-                        CohortId
+                    INSERT INTO Computer(
+                        Make,
+                        Manufacturer,
+                        PurchaseDate
                         )Values(    
-                        @firstName, 
-                        @lastName,
-                        @slackHandle,
-                        @cohortId
+                        @Make, 
+                        @Manufacturer,
+                        @PurchaseDate,
                        )
                     ";
 
-                        cmd.Parameters.AddWithValue("@firstName", student.FirstName);
-                        cmd.Parameters.AddWithValue("@lastName", student.LastName);
-                        cmd.Parameters.AddWithValue("@slackHandle", student.SlackHandle);
-                        cmd.Parameters.AddWithValue("@cohortId", student.CohortId);
+                        cmd.Parameters.AddWithValue("@Make", computer.Make);
+                        cmd.Parameters.AddWithValue("@Manufacturer", computer.Manufacturer);
+                        cmd.Parameters.AddWithValue("@PurchaseDate", computer.PurchaseDate);
 
                         cmd.ExecuteNonQuery();
                     }
@@ -219,7 +193,6 @@ namespace BangazonWorkforceManagement.Controllers
                 return View();
             }
         }
-
 
         // GET: Computers/Delete/5
         public ActionResult Delete(int id)
