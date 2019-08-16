@@ -6,6 +6,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Web.WebPages.Html;
 using BangazonAPI.Models;
+using BangazonWorkforceManagement.Models;
 using BangazonWorkforceManagement.Models.ViewModels;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -129,16 +130,16 @@ namespace BangazonWorkforceManagement.Controllers
 
             return computer;
         }
-        
+
         // GET: Computers/Create
-       public ActionResult Create()
+        public ActionResult Create()
         {
-            var viewModel = new ComputerEmployeeViewModel();
+            var viewModel = new ComputersEmployeeViewModel();
             var employees = GetEmployees();
             var selectItem = employees
                 .Select(employee => new SelectListItem
                 {
-                    Text =  $"{employee.FirstName} {employee.LastName}",
+                    Text = $"{employee.FirstName} {employee.LastName}",
                     Value = employee.Id.ToString()
                 })
                 .ToList();
@@ -179,12 +180,38 @@ namespace BangazonWorkforceManagement.Controllers
         // POST: Computers/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public ActionResult Edit(int id, IFormCollection collection)
+        public ActionResult Create(Computer computer)
         {
             try
             {
-                // TODO: Add update logic here
+                using (SqlConnection conn = Connection)
+                {
+                    conn.Open();
 
+                    using (SqlCommand cmd = conn.CreateCommand())
+                    {
+                        cmd.CommandText = @"
+                    INSERT INTO Student(
+                        FirstName,
+                        LastName,
+                        SlackHandle,
+                        CohortId
+                        )Values(    
+                        @firstName, 
+                        @lastName,
+                        @slackHandle,
+                        @cohortId
+                       )
+                    ";
+
+                        cmd.Parameters.AddWithValue("@firstName", student.FirstName);
+                        cmd.Parameters.AddWithValue("@lastName", student.LastName);
+                        cmd.Parameters.AddWithValue("@slackHandle", student.SlackHandle);
+                        cmd.Parameters.AddWithValue("@cohortId", student.CohortId);
+
+                        cmd.ExecuteNonQuery();
+                    }
+                }
                 return RedirectToAction(nameof(Index));
             }
             catch
@@ -192,6 +219,7 @@ namespace BangazonWorkforceManagement.Controllers
                 return View();
             }
         }
+
 
         // GET: Computers/Delete/5
         public ActionResult Delete(int id)
@@ -259,3 +287,5 @@ namespace BangazonWorkforceManagement.Controllers
         }
     }
 }
+
+   

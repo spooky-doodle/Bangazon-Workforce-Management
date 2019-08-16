@@ -5,12 +5,13 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Web.WebPages.Html;
 
-namespace BangazonWorkforceManagement.Models.ViewModels
+namespace BangazonWorkforceManagement.Models
 {
-    public class ComputerEmployeeViewModel
+    public class ComputersEmployeeViewModel
     {
         public Computer Computer { get; set; }
 
-        public List<SelectListItem> Employees { get; internal set; }
+        public List<SelectListItem> Employees { get; set; }
+
     }
 }
