@@ -5,6 +5,7 @@ using System.Data.SqlTypes;
 using System.Linq;
 using System.Threading.Tasks;
 using BangazonAPI.Models;
+using BangazonWorkforceManagement.Models;
 using BangazonWorkforceManagement.Models.ViewModels;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -108,12 +109,27 @@ namespace BangazonWorkforceManagement.Controllers
         // POST: Employees/Assign/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Assign(int id, AssignEmployeeTrainingViewModel )
+        public async Task<IActionResult> Assign(int id, EmployeeTraining assign )
         {
-            var viewModel = new AssignEmployeeTrainingViewModel();
-            viewModel.TrainingOptions = CreateTrainingSelections(await GetAvailableTrainingPrograms(id));
-            viewModel.EmployeeId = id;
-            return View(viewModel);
+            using (SqlConnection conn = Connection)
+            {
+                await conn.OpenAsync();
+                using (SqlCommand cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = @"INSERT INTO EmployeeTraining 
+                        (EmployeeId, TrainingProgramId)
+                        VALUES (@employeeId, @trainingProgramId)";
+                    cmd.Parameters.AddWithValue("@employeeId", id);
+                    cmd.Parameters.AddWithValue("@trainingProgramId", assign.TrainingProgramId);
+
+
+
+                    await cmd.ExecuteNonQueryAsync();
+                }
+            }
+
+
+            return RedirectToAction(nameof(Index));
         }
 
         // POST: Employee/Delete/5
