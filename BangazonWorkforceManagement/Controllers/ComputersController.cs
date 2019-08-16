@@ -41,12 +41,19 @@ namespace BangazonWorkforceManagement.Controllers
                 using (SqlCommand cmd = conn.CreateCommand())
                 {
                     cmd.CommandText = @"
-                        SELECT Id, 
-                        PurchaseDate,
-                        DecommissionDate,
-                        Make,
-                        Manufacturer
-                        FROM Computer
+                        SELECT c.Id, 
+                        c.PurchaseDate,
+                        c.DecommissionDate,
+                        c.Make,
+                        c.Manufacturer,
+                        e.FirstName,
+                        e.LastName
+                        FROM Computer c
+                        LEFT JOIN ComputerEmployee ce
+                        ON c.Id = ce.ComputerId
+                        LEFT JOIN Employee e
+                        ON ce.EmployeeId = e.Id
+                        WHERE ce.UnassignDate IS null
                     ";
 
                     SqlDataReader reader = cmd.ExecuteReader();
@@ -67,7 +74,18 @@ namespace BangazonWorkforceManagement.Controllers
                             newComputer.DecommissionDate = reader.GetDateTime(reader.GetOrdinal("DecommissionDate"));
                         }
                         catch (SqlNullValueException)
-                        { }  //  DecommissionDate defaults to null.
+                        { }  //  DecommissionDate defaults to null
+
+                        try
+                        {
+                            newComputer.Employee = new Employee()
+                            {
+                                FirstName = reader.GetString(reader.GetOrdinal("FirstName")),
+                                LastName = reader.GetString(reader.GetOrdinal("LastName"))
+                            };
+                        }
+                        catch (SqlNullValueException)
+                        { }  //  DecommissionDate defaults to null
 
                         computers.Add(newComputer);
                     }
