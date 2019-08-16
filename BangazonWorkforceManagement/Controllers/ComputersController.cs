@@ -146,7 +146,7 @@ namespace BangazonWorkforceManagement.Controllers
 
             selectItem.Insert(0, new SelectListItem
             {
-                Text = "Choose cohort...",
+                Text = "Choose Employee...",
                 Value = "0"
             });
             viewModel.Employees = selectItem;
@@ -175,7 +175,7 @@ namespace BangazonWorkforceManagement.Controllers
                         )Values(    
                         @Make, 
                         @Manufacturer,
-                        @PurchaseDate,
+                        @PurchaseDate
                        )
                     ";
 
