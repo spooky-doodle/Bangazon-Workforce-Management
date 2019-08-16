@@ -8,6 +8,8 @@ using BangazonAPI.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
+using BangazonWorkforceManagement.Models.ViewModels;
+using Microsoft.AspNetCore.Mvc.Rendering;
 
 namespace BangazonWorkforceManagement.Controllers
 {
@@ -45,7 +47,24 @@ namespace BangazonWorkforceManagement.Controllers
         // GET: Employee/Create
         public ActionResult Create()
         {
-            return View();
+            var viewModel = new EmployeeCreateViewModel();
+            var departments = GetAllDepartments();
+
+            var selectItems = departments
+                .Select(dept => new SelectListItem
+                {
+                    Text = dept.Name,
+                    Value = dept.Id.ToString()
+                })
+                .ToList();
+
+            selectItems.Insert(0, new SelectListItem
+            {
+                Text = "Choose Department...",
+                Value = "0"
+            });
+            viewModel.Departments = selectItems;
+            return View(viewModel);
         }
 
         // POST: Employee/Create
@@ -147,7 +166,8 @@ namespace BangazonWorkforceManagement.Controllers
                     cmd.CommandText = @"SELECT e.Id, 
                                                e.FirstName, 
                                                e.LastName, 
-                                               e.DepartmentId, 
+                                               e.DepartmentId,
+                                               e.IsSupervisor,
                                                d.Name,
                                                c.Make, 
                                                c.Manufacturer, 
@@ -186,6 +206,7 @@ namespace BangazonWorkforceManagement.Controllers
                                 FirstName = reader.GetString(reader.GetOrdinal("FirstName")),
                                 LastName = reader.GetString(reader.GetOrdinal("LastName")),
                                 DepartmentId = reader.GetInt32(reader.GetOrdinal("DepartmentId")),
+                                IsSupervisor = reader.GetBoolean(reader.GetOrdinal("IsSupervisor")),
                                 Department =
                                 {
                                     Id = reader.GetInt32(reader.GetOrdinal("Id")),
@@ -256,7 +277,7 @@ namespace BangazonWorkforceManagement.Controllers
                 using (SqlCommand cmd = conn.CreateCommand())
                 {
                     cmd.CommandText = @"
-                                        SELECT e.Id, e.FirstName, e.LastName, e.DepartmentId, d.Name
+                                        SELECT e.Id, e.FirstName, e.LastName, e.DepartmentId, e.IsSupervisor, d.Name
                                         FROM Employee e
                                         LEFT JOIN Department d
                                         on d.Id = e.DepartmentId
@@ -271,6 +292,7 @@ namespace BangazonWorkforceManagement.Controllers
                             FirstName = reader.GetString(reader.GetOrdinal("FirstName")),
                             LastName = reader.GetString(reader.GetOrdinal("LastName")),
                             DepartmentId = reader.GetInt32(reader.GetOrdinal("DepartmentId")),
+                            IsSupervisor = reader.GetBoolean(reader.GetOrdinal("IsSupervisor")),
                             Department =
                             {
                                 Id = reader.GetInt32(reader.GetOrdinal("Id")),
@@ -282,6 +304,32 @@ namespace BangazonWorkforceManagement.Controllers
                 }
             }
             return employees;
+        }
+        public List<Department> GetAllDepartments()
+        {
+            var departments = new List<Department>();
+            using (SqlConnection conn = Connection)
+            {
+                conn.Open();
+                using (SqlCommand cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = @"SELECT d.Id, d.Name, d.Budget FROM Department AS d ";
+
+                    SqlDataReader reader = cmd.ExecuteReader();
+
+                    while (reader.Read())
+                    {
+                        departments.Add(new Department()
+                        {
+                            Id = reader.GetInt32(reader.GetOrdinal("Id")),
+                            Name = reader.GetString(reader.GetOrdinal("Name")),
+                            Budget = reader.GetInt32(reader.GetOrdinal("Budget"))
+                        });
+                    }
+                    reader.Close();
+                }
+            }
+            return departments;
         }
     }
 }

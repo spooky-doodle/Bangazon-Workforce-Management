@@ -1,13 +1,14 @@
 ﻿using BangazonAPI.Models;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using System.Web.WebPages.Html;
+
 
 namespace BangazonWorkforceManagement.Models.ViewModels
 {
-    public class EmployeeDepartmentViewModel
+    public class EmployeeCreateViewModel
     {
         public List<SelectListItem> Departments { get; set; }
         public Employee Employee { get; set; }
