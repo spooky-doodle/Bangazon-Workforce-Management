@@ -33,6 +33,8 @@ namespace BangazonAPI.Models
 
         public List<Computer> Computers = new List<Computer>();
 
+        public List<TrainingProgram> Trainings = new List<TrainingProgram>();
+
         [Display(Name = "Full Name")]
         public string FullName
 

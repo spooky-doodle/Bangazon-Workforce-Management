@@ -128,7 +128,12 @@ namespace BangazonWorkforceManagement.Controllers
                                                c.Make, 
                                                c.Manufacturer, 
                                                c.PurchaseDate, 
-                                               c.DecommissionDate
+                                               c.DecommissionDate,
+                                               tp.Id AS TrainingId,
+                                               tp.Name AS TrainingName,
+                                               tp.StartDate,
+                                               tp.EndDate,
+                                               tp.MaxAttendees
                                         FROM Employee e
                                         LEFT JOIN Department d
                                         on d.Id = e.DepartmentId
@@ -136,6 +141,10 @@ namespace BangazonWorkforceManagement.Controllers
                                         ON ce.EmployeeId = e.Id
                                         LEFT JOIN Computer c
                                         ON ce.ComputerId = c.Id
+                                        LEFT JOIN EmployeeTraining et
+                                        ON et.EmployeeId = e.Id
+                                        LEFT JOIN TrainingProgram tp
+                                        ON tp.Id = et.TrainingProgramId
                                         WHERE ce.UnassignDate IS NULL
                                         AND e.Id = @id
                                       ";
@@ -170,16 +179,12 @@ namespace BangazonWorkforceManagement.Controllers
                                 Make = reader.GetString(reader.GetOrdinal("Make")),
                                 Manufacturer = reader.GetString(reader.GetOrdinal("Manufacturer")),
                                 PurchaseDate = reader.GetDateTime(reader.GetOrdinal("PurchaseDate"))
-                        };
+                            };
                             try
                             {
                                 computer.DecommissionDate = reader.GetDateTime(reader.GetOrdinal("DecommissionDate"));
-                                
                             }
-                            catch (SqlNullValueException)
-                            {
-                               
-                            }
+                            catch (SqlNullValueException){}
                             employee.Computers.Add(computer);
 
                         }
@@ -187,6 +192,29 @@ namespace BangazonWorkforceManagement.Controllers
                         {
                             // 
                         }
+                        try
+                        {
+                           
+                            TrainingProgram training = new TrainingProgram()
+                            {
+                                Id = reader.GetInt32(reader.GetOrdinal("TrainingId")),
+                                Name = reader.GetString(reader.GetOrdinal("TrainingName")),
+                                StartDate = reader.GetDateTime(reader.GetOrdinal("StartDate")),
+                                EndDate = reader.GetDateTime(reader.GetOrdinal("EndDate")),
+                                MaxAttendees = reader.GetInt32(reader.GetOrdinal("MaxAttendees"))
+                            };
+
+                            var idToCheck = training.Id;
+
+                            if (employee.Trainings.Any(tr => tr.Id == idToCheck))
+                            {
+                                
+                            } else
+                            {
+                                employee.Trainings.Add(training);
+                            }
+                        }
+                        catch (SqlNullValueException) { }
                     }
                     reader.Close();
                 }

@@ -59,8 +59,34 @@
             </li>
         }
     </ul>
-    </tbody>
-<div>
-    @Html.ActionLink("Edit", "Edit", new { id=Model.Id }) |
-    <a asp-action="Index">Back to List</a>
-</div>
+</tbody>
+<dl class="row">
+    <dt class="col-sm-2">
+        @Html.DisplayNameFor(model => model.Trainings)
+    </dt>
+    <dd class="col-sm-10">
+        @Html.DisplayFor(model => model.Trainings.Count)
+    </dd>
+</dl>
+<tbody>
+    <ul class="list-group">
+        @foreach (var tr in Model.Trainings)
+        {
+
+        <li class="list-group-item">
+            <h6>Name</h6>
+            <p>@Html.DisplayFor(modelItem => tr.Name)</p>
+            <h6>Start Date</h6>
+            <p>@Html.DisplayFor(modelItem => tr.StartDate)</p>
+            <h6>End Date</h6>
+            <p>@Html.DisplayFor(modelItem => tr.EndDate)</p>
+            <h6>Max Attendees</h6>
+            <p>@Html.DisplayFor(modelItem => tr.MaxAttendees)</p>
+        </li>
+        }
+    </ul>
+</tbody>
+    <div>
+        @Html.ActionLink("Edit", "Edit", new { id = Model.Id }) |
+        <a asp-action="Index">Back to List</a>
+    </div>
