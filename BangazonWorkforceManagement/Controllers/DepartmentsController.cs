@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.Linq;
 using System.Threading.Tasks;
+using BangazonAPI.Models;
 using BangazonWorkforceManagement.Models.ViewModels;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -40,7 +41,7 @@ namespace BangazonWorkforceManagement.Controllers
                                           SELECT d.Id, d.Name, d.Budget, COUNT(e.DepartmentId) AS DepartmentSize
                                           FROM Department AS d
                                           LEFT JOIN Employee AS e ON d.Id = e.DepartmentId
-                                          GROUP BY d.Id, d.Name, d.Budget ";
+                                          GROUP BY d.Id, d.Name, d.Budget";
 
                     SqlDataReader reader = cmd.ExecuteReader();
 
@@ -63,24 +64,52 @@ namespace BangazonWorkforceManagement.Controllers
         // GET: Departments/Details/5
         public ActionResult Details(int id)
         {
+            using(SqlConnection conn = Connection)
+            {
+                conn.Open();
+                using(SqlCommand cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = @"
+                                        SELECT d.Id, d.[Name], d.[Budget], e.FirstName, e.LastName, e.DepartmentId, e.IsSupervisor
+                                        FROM Department AS d
+                                        LEFT JOIN Employee AS e ON e.DepartmentId = d.Id
+                                        Where d.Id = 1";
+                }
+            }
             return View();
         }
 
         // GET: Departments/Create
         public ActionResult Create()
         {
-            return View();
+            return View(new Department());
         }
 
         // POST: Departments/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public ActionResult Create(IFormCollection collection)
+        public ActionResult Create(Department department)
         {
             try
             {
                 // TODO: Add insert logic here
+                using(SqlConnection conn = Connection)
+                {
+                    conn.Open();
+                    using(SqlCommand cmd = conn.CreateCommand())
+                    {
+                        cmd.CommandText = @"
+                                            INSERT INTO Department
+                                            ([Name], Budget)
+                                            VALUES
+                                            (@Name, @Budget)";
+                        cmd.Parameters.AddWithValue("@Name", department.Name);
+                        cmd.Parameters.AddWithValue("@Budget", department.Budget);
 
+                        cmd.ExecuteNonQuery();
+                    }
+
+                }
                 return RedirectToAction(nameof(Index));
             }
             catch
