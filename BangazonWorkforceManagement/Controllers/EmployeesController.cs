@@ -139,8 +139,7 @@ namespace BangazonWorkforceManagement.Controllers
                 {
                     
                     Text = $"{comp.Make} {comp.Manufacturer}",
-                    Value = comp.Id.ToString(),
-                    Selected = true
+                    Value = comp.Id.ToString()
                 })
                 .ToList();
             
