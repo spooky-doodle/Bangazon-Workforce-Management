@@ -90,6 +90,8 @@ namespace BangazonWorkforceManagement.Controllers
                                 Budget = reader.GetInt32(reader.GetOrdinal("Budget"))
                             };
                         }
+                        if (!reader.IsDBNull(reader.GetOrdinal("FirstName")))
+                        {
                         employees.Add(new Employee()
                         {
                             FirstName = reader.GetString(reader.GetOrdinal("FirstName")),
@@ -97,6 +99,7 @@ namespace BangazonWorkforceManagement.Controllers
                             DepartmentId = reader.GetInt32(reader.GetOrdinal("DepartmentId")),
                             IsSupervisor = reader.GetBoolean(reader.GetOrdinal("IsSuperVisor"))
                         });
+                        }
                     }
                 department.Employees = employees;
                 return View(department);
