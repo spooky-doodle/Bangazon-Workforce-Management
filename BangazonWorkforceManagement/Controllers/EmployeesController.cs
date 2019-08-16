@@ -170,7 +170,7 @@ namespace BangazonWorkforceManagement.Controllers
             }
 
 
-            return RedirectToAction(nameof(Index));
+            return RedirectToAction(nameof(Details), new {id = id });
         }
 
         // POST: Employee/Delete/5
