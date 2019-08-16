@@ -114,7 +114,7 @@ namespace BangazonWorkforceManagement.Controllers
         {
             var employee = GetOneEmployee(id);
             var departments = GetAllDepartments();
-            var computers = GetAllComputersForOneEmployee(id);
+            var computers = GetSpecificComputers(id);
 
             var viewModel = new EmployeeEditViewModel();
            
@@ -142,26 +142,48 @@ namespace BangazonWorkforceManagement.Controllers
                 })
                 .ToList();
 
-            employeeComputers.Insert(0, new SelectListItem
-            {
-                Text = "Choose Computers...",
-                Value = "0"
-            });
+            //employeeComputers.Insert(0, new SelectListItem
+            //{
+            //    Text = "Choose Computers...",
+            //    Value = "0"
+            //});
 
             viewModel.Employee = employee;
             viewModel.Departments = selectItems;
+            viewModel.Computers = employeeComputers;
             return View(viewModel);
         }
 
         // POST: Employee/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public ActionResult Edit(int id, IFormCollection collection)
+        public ActionResult Edit(int id, Employee employee)
         {
             try
             {
-                // TODO: Add update logic here
+                using (SqlConnection conn = Connection)
+                {
+                    conn.Open();
+                    using (SqlCommand cmd = conn.CreateCommand())
+                    {
+                        cmd.CommandText = @"
+                                            UPDATE Employee
+                                            SET 
+                                                FirstName = @firstName,
+                                                LastName = @lastName,
+                                                DepartmentId = @departmentId,
+                                                IsSupervisor = @isSupervisor
+                                            WHERE Id = @id
+                                            ";
 
+                        cmd.Parameters.Add(new SqlParameter("@id", id));
+                        cmd.Parameters.Add(new SqlParameter("@firstName", employee.FirstName));
+                        cmd.Parameters.Add(new SqlParameter("@lastName", employee.LastName));
+                        cmd.Parameters.Add(new SqlParameter("@departmentId", employee.DepartmentId));
+                        cmd.Parameters.Add(new SqlParameter("@isSupervisor", employee.IsSupervisor));
+                        cmd.ExecuteNonQuery();
+                    }
+                }
                 return RedirectToAction(nameof(Index));
             }
             catch
@@ -549,6 +571,56 @@ namespace BangazonWorkforceManagement.Controllers
                         });
                     }
                     reader.Close();
+                }
+            }
+            return computers;
+        }
+        public List<Computer> GetSpecificComputers(int id)
+        {
+            var computers = new List<Computer>();
+            using (SqlConnection conn = Connection)
+            {
+                conn.Open();
+                using (SqlCommand cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = @"
+                        SELECT c.Id, 
+                        c.PurchaseDate,
+                        c.DecommissionDate,
+                        c.Make,
+                        c.Manufacturer,
+                        ce.EmployeeId
+                        FROM Computer c
+                        LEFT JOIN ComputerEmployee ce
+                        ON ce.ComputerId = c.Id
+                        WHERE ce.EmployeeId = @id
+                        OR ce.EmployeeId IS NULL
+                                
+                    ";
+
+                    cmd.Parameters.Add(new SqlParameter("@id", id));
+                    SqlDataReader reader = cmd.ExecuteReader();
+
+
+                    while (reader.Read())
+                    {
+                        Computer newComputer = new Computer()
+                        {
+                            Id = reader.GetInt32(reader.GetOrdinal("Id")),
+                            PurchaseDate = reader.GetDateTime(reader.GetOrdinal("PurchaseDate")),
+                            Make = reader.GetString(reader.GetOrdinal("Make")),
+                            Manufacturer = reader.GetString(reader.GetOrdinal("Manufacturer"))
+                        };
+
+                        try
+                        {
+                            newComputer.DecommissionDate = reader.GetDateTime(reader.GetOrdinal("DecommissionDate"));
+                        }
+                        catch (SqlNullValueException)
+                        { }  //  DecommissionDate defaults to null.
+
+                        computers.Add(newComputer);
+                    }
                 }
             }
             return computers;
