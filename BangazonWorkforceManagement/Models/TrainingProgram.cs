@@ -24,5 +24,12 @@ namespace BangazonAPI.Models
 
         public List<Employee> Attendees { get; set; }
 
+        public bool IsCancelable { get
+            {
+                return DateTime.Compare(StartDate, DateTime.Today) > 0;
+            }
+
+        }
+
     }
 }
