@@ -64,19 +64,44 @@ namespace BangazonWorkforceManagement.Controllers
         // GET: Departments/Details/5
         public ActionResult Details(int id)
         {
-            using(SqlConnection conn = Connection)
+            using (SqlConnection conn = Connection)
             {
                 conn.Open();
-                using(SqlCommand cmd = conn.CreateCommand())
+                using (SqlCommand cmd = conn.CreateCommand())
                 {
-                    cmd.CommandText = @"
-                                        SELECT d.Id, d.[Name], d.[Budget], e.FirstName, e.LastName, e.DepartmentId, e.IsSupervisor
-                                        FROM Department AS d
-                                        LEFT JOIN Employee AS e ON e.DepartmentId = d.Id
-                                        Where d.Id = 1";
+                    cmd.CommandText = @"SELECT d.Id, d.[Name], d.[Budget], e.FirstName, e.LastName, e.DepartmentId, e.IsSupervisor
+                                        FROM Department d
+                                        LEFT JOIN Employee e ON e.DepartmentId = d.Id
+                                        Where d.Id = @id";
+                    cmd.Parameters.AddWithValue("@id", id);
+
+                    SqlDataReader reader = cmd.ExecuteReader();
+            Department department = null;
+            List<Employee> employees = new List<Employee>();
+
+                    while (reader.Read())
+                    {
+                        if (department == null)
+                        {
+                            department = new Department
+                            {
+                                Id = reader.GetInt32(reader.GetOrdinal("Id")),
+                                Name = reader.GetString(reader.GetOrdinal("Name")),
+                                Budget = reader.GetInt32(reader.GetOrdinal("Budget"))
+                            };
+                        }
+                        employees.Add(new Employee()
+                        {
+                            FirstName = reader.GetString(reader.GetOrdinal("FirstName")),
+                            LastName = reader.GetString(reader.GetOrdinal("LastName")),
+                            DepartmentId = reader.GetInt32(reader.GetOrdinal("DepartmentId")),
+                            IsSupervisor = reader.GetBoolean(reader.GetOrdinal("IsSuperVisor"))
+                        });
+                    }
+                department.Employees = employees;
+                return View(department);
                 }
             }
-            return View();
         }
 
         // GET: Departments/Create
@@ -93,10 +118,10 @@ namespace BangazonWorkforceManagement.Controllers
             try
             {
                 // TODO: Add insert logic here
-                using(SqlConnection conn = Connection)
+                using (SqlConnection conn = Connection)
                 {
                     conn.Open();
-                    using(SqlCommand cmd = conn.CreateCommand())
+                    using (SqlCommand cmd = conn.CreateCommand())
                     {
                         cmd.CommandText = @"
                                             INSERT INTO Department
