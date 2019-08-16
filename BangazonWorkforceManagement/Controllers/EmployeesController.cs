@@ -132,21 +132,20 @@ namespace BangazonWorkforceManagement.Controllers
                 Value = "0"
             });
 
-            //empComps
+            ////empComps
 
-            var employeeComputers = computers
-                .Select(comp => new SelectListItem
-                {
-                    
-                    Text = $"{comp.Make} {comp.Manufacturer}",
-                    Value = comp.Id.ToString()
-                })
-                .ToList();
+            //var employeeComputers = computers
+            //    .Select(comp => new SelectListItem
+            //    {
+            //        Text = $"{comp.Make} {comp.Manufacturer}",
+            //        Value = comp.Id.ToString()
+            //    })
+            //    .ToList();
             
 
             viewModel.Employee = employee;
             viewModel.Departments = selectItems;
-            viewModel.Computers = employeeComputers;
+            viewModel.Computers = computers;
             return View(viewModel);
         }
 
