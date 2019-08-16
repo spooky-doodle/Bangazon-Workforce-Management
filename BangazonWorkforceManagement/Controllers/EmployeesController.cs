@@ -5,11 +5,12 @@ using System.Data.SqlTypes;
 using System.Linq;
 using System.Threading.Tasks;
 using BangazonAPI.Models;
+using BangazonWorkforceManagement.Models;
+using BangazonWorkforceManagement.Models.ViewModels;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Configuration;
-using BangazonWorkforceManagement.Models.ViewModels;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.Extensions.Configuration;
 
 namespace BangazonWorkforceManagement.Controllers
 {
@@ -135,6 +136,45 @@ namespace BangazonWorkforceManagement.Controllers
         public ActionResult Delete(int id)
         {
             return View();
+        }
+
+        // GET: Employees/Assign/5
+        public async Task<IActionResult> Assign(int id)
+        {
+            var viewModel = new AssignEmployeeTrainingViewModel();
+            viewModel.TrainingOptions = CreateTrainingSelections(await GetAvailableTrainingPrograms(id));
+            viewModel.EmployeeId = id;
+            if (viewModel.TrainingOptions.Count > 0)
+            {
+                return View(viewModel);
+            }
+            else return RedirectToAction(nameof(Details), new { id = id });
+        }
+
+        // POST: Employees/Assign/5
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Assign(int id, EmployeeTraining assign )
+        {
+            using (SqlConnection conn = Connection)
+            {
+                await conn.OpenAsync();
+                using (SqlCommand cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = @"INSERT INTO EmployeeTraining 
+                        (EmployeeId, TrainingProgramId)
+                        VALUES (@employeeId, @trainingProgramId)";
+                    cmd.Parameters.AddWithValue("@employeeId", id);
+                    cmd.Parameters.AddWithValue("@trainingProgramId", assign.TrainingProgramId);
+
+
+
+                    await cmd.ExecuteNonQueryAsync();
+                }
+            }
+
+
+            return RedirectToAction(nameof(Details), new {id = id });
         }
 
         // POST: Employee/Delete/5
@@ -304,6 +344,104 @@ namespace BangazonWorkforceManagement.Controllers
                 }
             }
             return employees;
+        }
+
+        private async Task<List<TrainingProgram>> GetEmployeeTrainingPrograms(int id)
+        {
+            List<TrainingProgram> progs = new List<TrainingProgram>();
+
+            using (SqlConnection conn = Connection)
+            {
+                await conn.OpenAsync();
+                using (SqlCommand cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = @"SELECT tp.Id AS TrainingId,
+                                               tp.Name AS TrainingName,
+                                               tp.StartDate,
+                                               tp.EndDate,
+                                               tp.MaxAttendees
+                                        FROM EmployeeTraining et
+                                        LEFT JOIN TrainingProgram tp
+                                        ON tp.Id = et.TrainingProgramId
+                                        WHERE et.EmployeeId = @id";
+                    cmd.Parameters.AddWithValue("@id", id);
+                    var reader = cmd.ExecuteReader();
+                    while (await reader.ReadAsync())
+                    {
+                        progs.Add(ParseTrainingProgram(reader));
+                    }
+                }
+            }
+
+            return progs;
+        }
+
+        private async Task<List<TrainingProgram>> GetAvailableTrainingPrograms(int id)
+        {
+            List<TrainingProgram> allPrograms = null;
+            List<TrainingProgram> employeePrograms = null;
+
+            List<Task> tasks = new List<Task>()
+            {
+                Task.Run(async () => allPrograms = await GetAllTrainingPrograms()),
+                Task.Run(async () => employeePrograms = await GetEmployeeTrainingPrograms(id))
+            };
+            await Task.WhenAll(tasks);
+            List<TrainingProgram> availablePrograms = allPrograms.Where(prog => {
+                return employeePrograms.Find(empProg => empProg.Id == prog.Id) == null;
+                }).ToList();
+
+            return availablePrograms;
+
+            
+        }
+
+        private List<SelectListItem> CreateTrainingSelections(List<TrainingProgram> progs)
+        {
+            return progs.Select(prog => new SelectListItem()
+            {
+                Text = prog.Name,
+                Value = prog.Id.ToString()
+            }).ToList();
+
+        }
+
+        private async Task<List<TrainingProgram>> GetAllTrainingPrograms()
+        {
+            List<TrainingProgram> progs = new List<TrainingProgram>();
+
+            using (SqlConnection conn = Connection)
+            {
+                await conn.OpenAsync();
+                using (SqlCommand cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = @"SELECT tp.Id AS TrainingId,
+                                               tp.Name AS TrainingName,
+                                               tp.StartDate,
+                                               tp.EndDate,
+                                               tp.MaxAttendees
+                                        FROM TrainingProgram tp";
+                    var reader = cmd.ExecuteReader();
+                    while (await reader.ReadAsync())
+                    {
+                        progs.Add(ParseTrainingProgram(reader));
+                    }
+                }
+            }
+
+            return progs;
+        }
+
+        private TrainingProgram ParseTrainingProgram(SqlDataReader reader)
+        {
+            return new TrainingProgram()
+            {
+                Id = reader.GetInt32(reader.GetOrdinal("TrainingId")),
+                Name = reader.GetString(reader.GetOrdinal("TrainingName")),
+                StartDate = reader.GetDateTime(reader.GetOrdinal("StartDate")),
+                EndDate = reader.GetDateTime(reader.GetOrdinal("EndDate")),
+                MaxAttendees = reader.GetInt32(reader.GetOrdinal("MaxAttendees"))
+            };
         }
         public List<Department> GetAllDepartments()
         {

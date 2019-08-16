@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Data.SqlClient;
 using System.Linq;
 using System.Threading.Tasks;
@@ -32,15 +33,70 @@ namespace BangazonWorkforceManagement.Controllers
         // GET: TrainingPrograms
         public async Task<IActionResult> Index()
         {
-            var progs = await GetTrainingPrograms();
+            var active = true;
+            var progs = await GetTrainingPrograms(active);
+            return View(progs);
+        }
+
+        //  GET: Train
+        public async Task<IActionResult> Archive()
+        {
+            var active = false;
+            var progs = await GetTrainingPrograms(active);
             return View(progs);
         }
 
         // GET: TrainingPrograms/Details/5
-        public async Task<IActionResult> Details(int id)
+        public ActionResult Details(int id)
         {
+            using (SqlConnection conn = Connection)
+            {
+                conn.Open();
+                using (SqlCommand cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = @"
+                                        SELECT 
+                                        tp.Id, tp.[Name], tp.StartDate, tp.EndDate, tp.MaxAttendees, e.FirstName, e.LastName, e.DepartmentId, e.IsSupervisor 
+                                        FROM TrainingProgram AS tp
+                                        LEFT JOIN EmployeeTraining AS et ON tp.Id = et.TrainingProgramID
+                                        LEFT JOIN Employee AS e ON et.EmployeeId = e.Id
+                                        WHERE tp.Id = @id";
+                    cmd.Parameters.AddWithValue("@id", id);
 
-            return View(await GetOneTrainingProgram(id));
+                    SqlDataReader reader = cmd.ExecuteReader();
+
+                    TrainingProgram trainingProgram = null;
+                    List<Employee> employees = new List<Employee>();
+
+                    while (reader.Read())
+                    {
+                        if (trainingProgram == null)
+                        {
+                            trainingProgram = new TrainingProgram()
+                            {
+                                Id = reader.GetInt32(reader.GetOrdinal("Id")),
+                                Name = reader.GetString(reader.GetOrdinal("Name")),
+                                StartDate = reader.GetDateTime(reader.GetOrdinal("StartDate")),
+                                EndDate = reader.GetDateTime(reader.GetOrdinal("EndDate")),
+                                MaxAttendees = reader.GetInt32(reader.GetOrdinal("MaxAttendees"))
+                            };
+                        }
+
+                        if (!reader.IsDBNull(reader.GetOrdinal("FirstName")))
+                        {
+                            employees.Add(new Employee()
+                            {
+                                FirstName = reader.GetString(reader.GetOrdinal("FirstName")),
+                                LastName = reader.GetString(reader.GetOrdinal("LastName")),
+                                DepartmentId = reader.GetInt32(reader.GetOrdinal("DepartmentId")),
+                                IsSupervisor = reader.GetBoolean(reader.GetOrdinal("IsSupervisor"))
+                            });
+                        }
+                    }
+                    trainingProgram.Attendees = employees;
+                    return View(trainingProgram);
+                }
+            }
         }
 
         // GET: TrainingPrograms/Create
@@ -86,23 +142,40 @@ namespace BangazonWorkforceManagement.Controllers
         }
 
         // GET: TrainingPrograms/Edit/5
-        public ActionResult Edit(int id)
+        public async Task<ActionResult> Edit(int id)
         {
-            return View();
+            return View(await GetOneTrainingProgram(id));
         }
 
         // POST: TrainingPrograms/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public ActionResult Edit(int id, IFormCollection collection)
+        public ActionResult Edit(int id, TrainingProgram trainingProgram)
         {
             try
             {
                 // TODO: Add update logic here
+                using(SqlConnection conn = Connection)
+                {
+                    conn.Open();
+                    using(SqlCommand cmd = conn.CreateCommand())
+                    {
+                        cmd.CommandText = @"
+                                            UPDATE TrainingProgram
+                                            SET [Name] = @Name, StartDate = @StartDate, EndDate = @EndDate, MaxAttendees = @MaxAttendees
+                                            WHERE Id = @id";
+                        cmd.Parameters.AddWithValue("@id", id);
+                        cmd.Parameters.AddWithValue("@Name", trainingProgram.Name);
+                        cmd.Parameters.AddWithValue("@StartDate", trainingProgram.StartDate);
+                        cmd.Parameters.AddWithValue("@EndDate", trainingProgram.EndDate);
+                        cmd.Parameters.AddWithValue("@MaxAttendees", trainingProgram.MaxAttendees);
 
+                        cmd.ExecuteNonQuery();
+                    }
+                }
                 return RedirectToAction(nameof(Index));
             }
-            catch
+            catch(Exception ex)
             {
                 return View();
             }
@@ -127,7 +200,7 @@ namespace BangazonWorkforceManagement.Controllers
                 var progToDelete = await GetOneTrainingProgram(id);
 
                 if (progToDelete.IsCancelable == false) throw new Exception("Cannot delete events that have started");
-                
+
                 using (SqlConnection conn = Connection)
                 {
                     await conn.OpenAsync();
@@ -149,7 +222,7 @@ namespace BangazonWorkforceManagement.Controllers
             }
         }
 
-        private async Task<List<TrainingProgram>> GetTrainingPrograms(string filterText = "")
+        private async Task<List<TrainingProgram>> GetTrainingPrograms(bool future = true)
         {
             var progs = new List<TrainingProgram>();
             using (SqlConnection conn = Connection)
@@ -158,7 +231,10 @@ namespace BangazonWorkforceManagement.Controllers
                 using (SqlCommand cmd = conn.CreateCommand())
                 {
                     cmd.CommandText = "SELECT Id, [Name], StartDate, EndDate, MaxAttendees FROM TrainingProgram ";
-                    cmd.CommandText += filterText;  
+                    cmd.CommandText += "WHERE StartDate ";
+                    cmd.CommandText += future ? ">" : " <= ";
+                    cmd.CommandText += " @compareDate";
+                    cmd.Parameters.Add(new SqlParameter("@compareDate", SqlDbType.DateTime) { Value = DateTime.Today });
 
                     var reader = cmd.ExecuteReader();
 
