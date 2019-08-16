@@ -137,16 +137,13 @@ namespace BangazonWorkforceManagement.Controllers
             var employeeComputers = computers
                 .Select(comp => new SelectListItem
                 {
+                    
                     Text = $"{comp.Make} {comp.Manufacturer}",
-                    Value = comp.Id.ToString()
+                    Value = comp.Id.ToString(),
+                    Selected = true
                 })
                 .ToList();
-
-            //employeeComputers.Insert(0, new SelectListItem
-            //{
-            //    Text = "Choose Computers...",
-            //    Value = "0"
-            //});
+            
 
             viewModel.Employee = employee;
             viewModel.Departments = selectItems;
