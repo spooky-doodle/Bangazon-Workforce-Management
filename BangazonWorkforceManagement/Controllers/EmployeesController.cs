@@ -259,5 +259,92 @@ namespace BangazonWorkforceManagement.Controllers
             }
             return employees;
         }
+
+        private async Task<List<TrainingProgram>> GetEmployeeTrainingPrograms(int id)
+        {
+            List<TrainingProgram> progs = new List<TrainingProgram>();
+
+            using (SqlConnection conn = Connection)
+            {
+                await conn.OpenAsync();
+                using (SqlCommand cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = @"SELECT tp.Id AS TrainingId,
+                                               tp.Name AS TrainingName,
+                                               tp.StartDate,
+                                               tp.EndDate,
+                                               tp.MaxAttendees
+                                        FROM EmployeeTraining et
+                                        LEFT JOIN TrainingProgram tp
+                                        ON tp.Id = et.TrainingProgramId
+                                        WHERE et.EmployeeId = @id";
+                    var reader = cmd.ExecuteReader();
+                    while (await reader.ReadAsync())
+                    {
+                        progs.Add(ParseTrainingProgram(reader));
+                    }
+                }
+            }
+
+            return progs;
+        }
+
+        private async Task<List<TrainingProgram>> GetAvailableTrainingPrograms(int id)
+        {
+            List<TrainingProgram> allPrograms = null;
+            List<TrainingProgram> employeePrograms = null;
+
+            List<Task> tasks = new List<Task>()
+            {
+                Task.Run(async () => allPrograms = await GetAllTrainingPrograms()),
+                Task.Run(async () => employeePrograms = await GetEmployeeTrainingPrograms(id))
+            };
+            await Task.WhenAll(tasks);
+            List<TrainingProgram> availablePrograms = allPrograms.Where(prog => {
+                return employeePrograms.Find(empProg => empProg.Id == prog.Id) == null;
+                }).ToList();
+
+            return availablePrograms;
+
+            
+        }
+
+        private async Task<List<TrainingProgram>> GetAllTrainingPrograms()
+        {
+            List<TrainingProgram> progs = new List<TrainingProgram>();
+
+            using (SqlConnection conn = Connection)
+            {
+                await conn.OpenAsync();
+                using (SqlCommand cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = @"SELECT tp.Id AS TrainingId,
+                                               tp.Name AS TrainingName,
+                                               tp.StartDate,
+                                               tp.EndDate,
+                                               tp.MaxAttendees
+                                        FROM TrainingProgram tp";
+                    var reader = cmd.ExecuteReader();
+                    while (await reader.ReadAsync())
+                    {
+                        progs.Add(ParseTrainingProgram(reader));
+                    }
+                }
+            }
+
+            return progs;
+        }
+
+        private TrainingProgram ParseTrainingProgram(SqlDataReader reader)
+        {
+            return new TrainingProgram()
+            {
+                Id = reader.GetInt32(reader.GetOrdinal("TrainingId")),
+                Name = reader.GetString(reader.GetOrdinal("TrainingName")),
+                StartDate = reader.GetDateTime(reader.GetOrdinal("StartDate")),
+                EndDate = reader.GetDateTime(reader.GetOrdinal("EndDate")),
+                MaxAttendees = reader.GetInt32(reader.GetOrdinal("MaxAttendees"))
+            };
+        }
     }
 }
