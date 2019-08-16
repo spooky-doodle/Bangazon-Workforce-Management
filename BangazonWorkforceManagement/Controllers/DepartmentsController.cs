@@ -191,5 +191,32 @@ namespace BangazonWorkforceManagement.Controllers
                 return View();
             }
         }
+
+        public List<Department> GetAllDepartments()
+        {
+           var departments = new List<Department>();
+            using (SqlConnection conn = Connection)
+            {
+                conn.Open();
+                using (SqlCommand cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = @"SELECT d.Id, d.Name, d.Budget FROM Department AS d ";
+
+                    SqlDataReader reader = cmd.ExecuteReader();
+
+                    while (reader.Read())
+                    {
+                        departments.Add(new Department()
+                        {
+                            Id = reader.GetInt32(reader.GetOrdinal("Id")),
+                            Name = reader.GetString(reader.GetOrdinal("Name")),
+                            Budget = reader.GetInt32(reader.GetOrdinal("Budget"))
+                        });
+                    }
+                    reader.Close();
+                }
+            }
+            return departments;
+        }
     }
 }
