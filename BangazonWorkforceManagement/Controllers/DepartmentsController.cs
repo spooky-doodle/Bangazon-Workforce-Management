@@ -41,7 +41,7 @@ namespace BangazonWorkforceManagement.Controllers
                                           SELECT d.Id, d.Name, d.Budget, COUNT(e.DepartmentId) AS DepartmentSize
                                           FROM Department AS d
                                           LEFT JOIN Employee AS e ON d.Id = e.DepartmentId
-                                          GROUP BY d.Id, d.Name, d.Budget ";
+                                          GROUP BY d.Id, d.Name, d.Budget";
 
                     SqlDataReader reader = cmd.ExecuteReader();
 
@@ -64,24 +64,80 @@ namespace BangazonWorkforceManagement.Controllers
         // GET: Departments/Details/5
         public ActionResult Details(int id)
         {
-            return View();
+            using (SqlConnection conn = Connection)
+            {
+                conn.Open();
+                using (SqlCommand cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = @"SELECT d.Id, d.[Name], d.[Budget], e.FirstName, e.LastName, e.DepartmentId, e.IsSupervisor
+                                        FROM Department AS d
+                                        LEFT JOIN Employee AS e ON e.DepartmentId = d.Id
+                                        Where d.Id = @id";
+                    cmd.Parameters.AddWithValue("@id", id);
+
+                    SqlDataReader reader = cmd.ExecuteReader();
+            Department department = null;
+            List<Employee> employees = new List<Employee>();
+
+                    while (reader.Read())
+                    {
+                        if (department == null)
+                        {
+                            department = new Department
+                            {
+                                Id = reader.GetInt32(reader.GetOrdinal("Id")),
+                                Name = reader.GetString(reader.GetOrdinal("Name")),
+                                Budget = reader.GetInt32(reader.GetOrdinal("Budget"))
+                            };
+                        }
+                        if (!reader.IsDBNull(reader.GetOrdinal("FirstName")))
+                        {
+                        employees.Add(new Employee()
+                        {
+                            FirstName = reader.GetString(reader.GetOrdinal("FirstName")),
+                            LastName = reader.GetString(reader.GetOrdinal("LastName")),
+                            DepartmentId = reader.GetInt32(reader.GetOrdinal("DepartmentId")),
+                            IsSupervisor = reader.GetBoolean(reader.GetOrdinal("IsSuperVisor"))
+                        });
+                        }
+                    }
+                department.Employees = employees;
+                return View(department);
+                }
+            }
         }
 
         // GET: Departments/Create
         public ActionResult Create()
         {
-            return View();
+            return View(new Department());
         }
 
         // POST: Departments/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public ActionResult Create(IFormCollection collection)
+        public ActionResult Create(Department department)
         {
             try
             {
                 // TODO: Add insert logic here
+                using (SqlConnection conn = Connection)
+                {
+                    conn.Open();
+                    using (SqlCommand cmd = conn.CreateCommand())
+                    {
+                        cmd.CommandText = @"
+                                            INSERT INTO Department
+                                            ([Name], Budget)
+                                            VALUES
+                                            (@Name, @Budget)";
+                        cmd.Parameters.AddWithValue("@Name", department.Name);
+                        cmd.Parameters.AddWithValue("@Budget", department.Budget);
 
+                        cmd.ExecuteNonQuery();
+                    }
+
+                }
                 return RedirectToAction(nameof(Index));
             }
             catch
