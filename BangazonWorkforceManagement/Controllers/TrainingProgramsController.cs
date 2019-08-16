@@ -142,23 +142,40 @@ namespace BangazonWorkforceManagement.Controllers
         }
 
         // GET: TrainingPrograms/Edit/5
-        public ActionResult Edit(int id)
+        public async Task<ActionResult> Edit(int id)
         {
-            return View();
+            return View(await GetOneTrainingProgram(id));
         }
 
         // POST: TrainingPrograms/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public ActionResult Edit(int id, IFormCollection collection)
+        public ActionResult Edit(int id, TrainingProgram trainingProgram)
         {
             try
             {
                 // TODO: Add update logic here
+                using(SqlConnection conn = Connection)
+                {
+                    conn.Open();
+                    using(SqlCommand cmd = conn.CreateCommand())
+                    {
+                        cmd.CommandText = @"
+                                            UPDATE TrainingProgram
+                                            SET [Name] = @Name, StartDate = @StartDate, EndDate = @EndDate, MaxAttendees = @MaxAttendees
+                                            WHERE Id = @id";
+                        cmd.Parameters.AddWithValue("@id", id);
+                        cmd.Parameters.AddWithValue("@Name", trainingProgram.Name);
+                        cmd.Parameters.AddWithValue("@StartDate", trainingProgram.StartDate);
+                        cmd.Parameters.AddWithValue("@EndDate", trainingProgram.EndDate);
+                        cmd.Parameters.AddWithValue("@MaxAttendees", trainingProgram.MaxAttendees);
 
+                        cmd.ExecuteNonQuery();
+                    }
+                }
                 return RedirectToAction(nameof(Index));
             }
-            catch
+            catch(Exception ex)
             {
                 return View();
             }
