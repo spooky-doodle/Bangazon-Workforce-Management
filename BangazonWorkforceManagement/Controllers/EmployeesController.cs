@@ -144,7 +144,11 @@ namespace BangazonWorkforceManagement.Controllers
             var viewModel = new AssignEmployeeTrainingViewModel();
             viewModel.TrainingOptions = CreateTrainingSelections(await GetAvailableTrainingPrograms(id));
             viewModel.EmployeeId = id;
-            return View(viewModel);
+            if (viewModel.TrainingOptions.Count > 0)
+            {
+                return View(viewModel);
+            }
+            else return RedirectToAction(nameof(Details), new { id = id });
         }
 
         // POST: Employees/Assign/5
