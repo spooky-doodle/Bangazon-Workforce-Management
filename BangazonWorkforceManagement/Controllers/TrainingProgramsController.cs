@@ -8,20 +8,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 
-//Given a user wants to view all training programs
-//When the user clicks the Training Programs item in the navigation bar
-//Then the user will see a list of all training programs that have not taken place yet
 
-//Given the user is viewing all training programs
-//When the user clicks the Create New link
-//Then the user should be presented with a form in which the following information 
-//can be entered
-
-//Name
-//Title
-//Start day
-//End day
-//Maximum number of attendees
 
 namespace BangazonWorkforceManagement.Controllers
 {
@@ -122,19 +109,37 @@ namespace BangazonWorkforceManagement.Controllers
         }
 
         // GET: TrainingPrograms/Delete/5
-        public ActionResult Delete(int id)
+        public async Task<IActionResult> Delete(int id)
         {
-            return View();
+            var progToDelete = await GetOneTrainingProgram(id);
+
+            if (progToDelete.IsCancelable) return View(progToDelete);
+            else return RedirectToAction(nameof(Index));
         }
 
         // POST: TrainingPrograms/Delete/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public ActionResult Delete(int id, IFormCollection collection)
+        public async Task<IActionResult> Delete(int id, IFormCollection collection)
         {
             try
             {
-                // TODO: Add delete logic here
+                var progToDelete = await GetOneTrainingProgram(id);
+
+                if (progToDelete.IsCancelable == false) throw new Exception("Cannot delete events that have started");
+                
+                using (SqlConnection conn = Connection)
+                {
+                    await conn.OpenAsync();
+                    using (SqlCommand cmd = conn.CreateCommand())
+                    {
+                        cmd.CommandText = @"
+                        DELETE FROM EmployeeTraining WHERE TrainingProgramId = @id
+                        DELETE FROM TrainingProgram WHERE Id = @id";
+                        cmd.Parameters.AddWithValue("@id", id);
+                        await cmd.ExecuteNonQueryAsync();
+                    }
+                }
 
                 return RedirectToAction(nameof(Index));
             }
@@ -211,5 +216,7 @@ namespace BangazonWorkforceManagement.Controllers
 
             return prog;
         }
+
+
     }
 }
