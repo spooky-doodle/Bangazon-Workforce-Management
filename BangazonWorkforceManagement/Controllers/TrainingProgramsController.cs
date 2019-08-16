@@ -214,14 +214,10 @@ namespace BangazonWorkforceManagement.Controllers
                 using (SqlCommand cmd = conn.CreateCommand())
                 {
                     cmd.CommandText = "SELECT Id, [Name], StartDate, EndDate, MaxAttendees FROM TrainingProgram ";
-<<<<<<< HEAD
-                    cmd.CommandText += filterText;
-=======
                     cmd.CommandText += "WHERE StartDate ";
                     cmd.CommandText += future ? ">" : " <= ";
                     cmd.CommandText += " @compareDate";
                     cmd.Parameters.Add(new SqlParameter("@compareDate", SqlDbType.DateTime) { Value = DateTime.Today });
->>>>>>> master
 
                     var reader = cmd.ExecuteReader();
 
