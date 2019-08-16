@@ -24,6 +24,7 @@ namespace BangazonAPI.Models
         [Required]
         [Display(Name = "Department Id")]
         public int DepartmentId { get; set; }
+        //comment
 
         [Required]
         public bool IsSupervisor { get; set; }
