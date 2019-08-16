@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Data.SqlClient;
 using System.Linq;
 using System.Threading.Tasks;
@@ -32,7 +33,16 @@ namespace BangazonWorkforceManagement.Controllers
         // GET: TrainingPrograms
         public async Task<IActionResult> Index()
         {
-            var progs = await GetTrainingPrograms();
+            var active = true;
+            var progs = await GetTrainingPrograms(active);
+            return View(progs);
+        }
+
+        //  GET: Train
+        public async Task<IActionResult> Archive()
+        {
+            var active = false;
+            var progs = await GetTrainingPrograms(active);
             return View(progs);
         }
 
@@ -195,7 +205,7 @@ namespace BangazonWorkforceManagement.Controllers
             }
         }
 
-        private async Task<List<TrainingProgram>> GetTrainingPrograms(string filterText = "")
+        private async Task<List<TrainingProgram>> GetTrainingPrograms(bool future = true)
         {
             var progs = new List<TrainingProgram>();
             using (SqlConnection conn = Connection)
@@ -204,7 +214,14 @@ namespace BangazonWorkforceManagement.Controllers
                 using (SqlCommand cmd = conn.CreateCommand())
                 {
                     cmd.CommandText = "SELECT Id, [Name], StartDate, EndDate, MaxAttendees FROM TrainingProgram ";
+<<<<<<< HEAD
                     cmd.CommandText += filterText;
+=======
+                    cmd.CommandText += "WHERE StartDate ";
+                    cmd.CommandText += future ? ">" : " <= ";
+                    cmd.CommandText += " @compareDate";
+                    cmd.Parameters.Add(new SqlParameter("@compareDate", SqlDbType.DateTime) { Value = DateTime.Today });
+>>>>>>> master
 
                     var reader = cmd.ExecuteReader();
 
