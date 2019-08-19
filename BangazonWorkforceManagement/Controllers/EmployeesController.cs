@@ -131,13 +131,24 @@ namespace BangazonWorkforceManagement.Controllers
                 Value = "0"
             });
 
+<<<<<<< HEAD
+=======
+            ////empComps
+>>>>>>> 5d06044dfc0bc7b0c09d459b1e0f1f2789415116
 
             var computers = GetSpecificComputers(id);
 
+<<<<<<< HEAD
             viewModel.Computers = computers
                 .Select(comp =>
                 {
                     viewModel.CompIds.Add(comp.Id.ToString());
+=======
+            var CompSelectItems = computers
+                .Select(comp =>
+                {
+
+>>>>>>> 5d06044dfc0bc7b0c09d459b1e0f1f2789415116
                     return new SelectListItem
                     {
                         Text = $"{comp.Make} {comp.Manufacturer}",
@@ -147,17 +158,40 @@ namespace BangazonWorkforceManagement.Controllers
                 .ToList();
 
 
+<<<<<<< HEAD
             ////empComps
             ///
 
             viewModel.EmpComps = computers
                 .Where(compt => compt.Employee.Id == id)
                 .Select(comp => new SelectListItem
+=======
+            var EmpCompSelectItems = EmpComputers
+                .Where(compt =>
                 {
-                    Text = $"{comp.Make} {comp.Manufacturer}",
-                    Value = comp.Id.ToString()
+                    if (compt.Employee != null)
+                    {
+                        return compt.Employee.Id == id;
+                    } else {
+                        return false;
+                    };
+
+                })
+                .Select(comp =>
+>>>>>>> 5d06044dfc0bc7b0c09d459b1e0f1f2789415116
+                {
+                    viewModel.CompIds.Add(comp.Id.ToString());
+                    return new SelectListItem
+                    {
+                        Text = $"{comp.Make} {comp.Manufacturer}",
+                        Value = comp.Id.ToString()
+                    };
                 })
                 .ToList();
+<<<<<<< HEAD
+=======
+
+>>>>>>> 5d06044dfc0bc7b0c09d459b1e0f1f2789415116
 
 
             viewModel.Comps = new MultiSelectList(viewModel.Computers, "Value", "Text", viewModel.EmpComps);
@@ -354,7 +388,17 @@ namespace BangazonWorkforceManagement.Controllers
                                 computer.DecommissionDate = reader.GetDateTime(reader.GetOrdinal("DecommissionDate"));
                             }
                             catch (SqlNullValueException) { }
-                            employee.Computers.Add(computer);
+
+                            var idToCompare = computer.Id;
+                            if (employee.Computers.Any(tr => tr.Id == idToCompare))
+                            {
+
+                            }
+                            else
+                            {
+                                employee.Computers.Add(computer);
+                            }
+
 
                         }
                         catch (SqlNullValueException)
@@ -651,7 +695,7 @@ namespace BangazonWorkforceManagement.Controllers
                 using (SqlCommand cmd = conn.CreateCommand())
                 {
                     cmd.CommandText = @"
-                        SELECT DISTINCT c.Id, 
+                        SELECT DISTINCT c.Id AS ComputerId, 
                         c.PurchaseDate,
                         c.DecommissionDate,
                         c.Make,
@@ -659,10 +703,11 @@ namespace BangazonWorkforceManagement.Controllers
                         ce.EmployeeId
                         FROM Computer c
                         LEFT JOIN ComputerEmployee ce
+                        ON ce.ComputerId = c.Id
                         LEFT JOIN Employee e
                         ON e.Id = ce.EmployeeId
-                        ON ce.ComputerId = c.Id
-                        WHERE ce.EmployeeId = @id
+                        WHERE c.DecommissionDate IS NULL
+                        AND ce.EmployeeId = @id
                         OR ce.EmployeeId IS NULL
                                 
                     ";
@@ -675,7 +720,7 @@ namespace BangazonWorkforceManagement.Controllers
                     {
                         Computer newComputer = new Computer()
                         {
-                            Id = reader.GetInt32(reader.GetOrdinal("Id")),
+                            Id = reader.GetInt32(reader.GetOrdinal("ComputerId")),
                             PurchaseDate = reader.GetDateTime(reader.GetOrdinal("PurchaseDate")),
                             Make = reader.GetString(reader.GetOrdinal("Make")),
                             Manufacturer = reader.GetString(reader.GetOrdinal("Manufacturer"))
@@ -692,7 +737,7 @@ namespace BangazonWorkforceManagement.Controllers
 
                             Employee employee = new Employee()
                             {
-                                Id = reader.GetInt32(reader.GetOrdinal("Id"))
+                                Id = reader.GetInt32(reader.GetOrdinal("EmployeeId"))
                             };
                             newComputer.Employee = employee;
 
