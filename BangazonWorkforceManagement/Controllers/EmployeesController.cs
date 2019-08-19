@@ -135,8 +135,33 @@ namespace BangazonWorkforceManagement.Controllers
             ///
 
             var computers = GetSpecificComputers(id);
+      
+
 
             viewModel.Computers = computers
+                .Select(comp =>
+                {
+                    //viewModel.CompIds.Add(comp.Id.ToString());
+                    return new SelectListItem
+                    {
+                        Text = $"{comp.Make} {comp.Manufacturer}",
+                        Value = comp.Id.ToString()
+                    };
+                })
+                .ToList();
+
+            viewModel.Computers.Insert(0, new SelectListItem
+            {
+                Text = "Choose A Computer...",
+                Value = "0"
+            });
+
+
+            ////empComps
+            ///
+
+            viewModel.EmpComps = computers
+                .Where(compt => compt.Employee != null)
                 .Select(comp =>
                 {
                     viewModel.CompIds.Add(comp.Id.ToString());
@@ -148,18 +173,6 @@ namespace BangazonWorkforceManagement.Controllers
                 })
                 .ToList();
 
-
-            ////empComps
-            ///
-
-            viewModel.EmpComps = computers
-                .Where(compt => compt.Employee != null)
-                .Select(comp => new SelectListItem
-                {
-                    Text = $"{comp.Make} {comp.Manufacturer}",
-                    Value = comp.Id.ToString()
-                })
-                .ToList();
             
 
             viewModel.Comps = new MultiSelectList(viewModel.Computers, "Value", "Text", viewModel.EmpComps);
@@ -174,7 +187,7 @@ namespace BangazonWorkforceManagement.Controllers
             var computers = GetSpecificComputers(id);
 
             var newAssignments = computers
-                    .Where(comp => comp.Employee == null 
+                    .Where(comp => comp.Employee == null
                      && model.CompIds.Contains(comp.Id.ToString())).ToList();
 
             var unassignments = computers
@@ -295,6 +308,7 @@ namespace BangazonWorkforceManagement.Controllers
                                                e.DepartmentId,
                                                e.IsSupervisor,
                                                d.Name,
+                                               c.Id AS ComputerId,
                                                c.Make, 
                                                c.Manufacturer, 
                                                c.PurchaseDate, 
@@ -316,6 +330,7 @@ namespace BangazonWorkforceManagement.Controllers
                                         LEFT JOIN TrainingProgram tp
                                         ON tp.Id = et.TrainingProgramId
                                         WHERE ce.UnassignDate IS NULL
+                                        AND c.DecommissionDate IS NULL
                                         AND e.Id = @id
                                       ";
 
@@ -346,7 +361,7 @@ namespace BangazonWorkforceManagement.Controllers
                         {
                             Computer computer = new Computer()
                             {
-                                Id = reader.GetInt32(reader.GetOrdinal("Id")),
+                                Id = reader.GetInt32(reader.GetOrdinal("ComputerId")),
                                 Make = reader.GetString(reader.GetOrdinal("Make")),
                                 Manufacturer = reader.GetString(reader.GetOrdinal("Manufacturer")),
                                 PurchaseDate = reader.GetDateTime(reader.GetOrdinal("PurchaseDate"))
@@ -354,11 +369,13 @@ namespace BangazonWorkforceManagement.Controllers
                             try
                             {
                                 computer.DecommissionDate = reader.GetDateTime(reader.GetOrdinal("DecommissionDate"));
+                                
                             }
                             catch (SqlNullValueException) { }
 
                             var idToCompare = computer.Id;
-                            if (employee.Computers.Any(tr => tr.Id == idToCompare))
+                            if (employee.Computers
+                                .Any(tr => tr.Id == idToCompare))
                             {
 
                             }
