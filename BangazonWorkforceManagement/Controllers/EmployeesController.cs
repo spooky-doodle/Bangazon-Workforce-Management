@@ -131,24 +131,15 @@ namespace BangazonWorkforceManagement.Controllers
                 Value = "0"
             });
 
-<<<<<<< HEAD
-=======
             ////empComps
->>>>>>> 5d06044dfc0bc7b0c09d459b1e0f1f2789415116
+            ///
 
             var computers = GetSpecificComputers(id);
 
-<<<<<<< HEAD
             viewModel.Computers = computers
                 .Select(comp =>
                 {
                     viewModel.CompIds.Add(comp.Id.ToString());
-=======
-            var CompSelectItems = computers
-                .Select(comp =>
-                {
-
->>>>>>> 5d06044dfc0bc7b0c09d459b1e0f1f2789415116
                     return new SelectListItem
                     {
                         Text = $"{comp.Make} {comp.Manufacturer}",
@@ -158,41 +149,18 @@ namespace BangazonWorkforceManagement.Controllers
                 .ToList();
 
 
-<<<<<<< HEAD
             ////empComps
             ///
 
             viewModel.EmpComps = computers
-                .Where(compt => compt.Employee.Id == id)
+                .Where(compt => compt.Employee != null)
                 .Select(comp => new SelectListItem
-=======
-            var EmpCompSelectItems = EmpComputers
-                .Where(compt =>
                 {
-                    if (compt.Employee != null)
-                    {
-                        return compt.Employee.Id == id;
-                    } else {
-                        return false;
-                    };
-
-                })
-                .Select(comp =>
->>>>>>> 5d06044dfc0bc7b0c09d459b1e0f1f2789415116
-                {
-                    viewModel.CompIds.Add(comp.Id.ToString());
-                    return new SelectListItem
-                    {
-                        Text = $"{comp.Make} {comp.Manufacturer}",
-                        Value = comp.Id.ToString()
-                    };
+                    Text = $"{comp.Make} {comp.Manufacturer}",
+                    Value = comp.Id.ToString()
                 })
                 .ToList();
-<<<<<<< HEAD
-=======
-
->>>>>>> 5d06044dfc0bc7b0c09d459b1e0f1f2789415116
-
+            
 
             viewModel.Comps = new MultiSelectList(viewModel.Computers, "Value", "Text", viewModel.EmpComps);
             return View(viewModel);
