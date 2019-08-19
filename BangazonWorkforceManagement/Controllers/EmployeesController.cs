@@ -175,11 +175,11 @@ namespace BangazonWorkforceManagement.Controllers
 
             var newAssignments = computers
                     .Where(comp => comp.Employee == null 
-                    && model.CompIds.Contains(comp.Id.ToString()));
+                     && model.CompIds.Contains(comp.Id.ToString())).ToList();
 
             var unassignments = computers
-                .Where(comp => comp.Employee.Id == id 
-                && model.CompIds.Contains(comp.Id.ToString()) == false);
+                .Where(comp => comp.Employee != null
+                && model.CompIds.Contains(comp.Id.ToString()) == false).ToList();
 
             var tasks = newAssignments.Select(async comp => await AssignComputer(id, comp.Id)).ToList();
             tasks.AddRange(unassignments.Select(async comp => await UnassignComputer(id, comp.Id)));
