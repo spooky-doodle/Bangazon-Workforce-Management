@@ -34,6 +34,7 @@ namespace BangazonWorkforceManagement.Controllers
         // GET: Computers
         public ActionResult Index()
         {
+
             var computers = new List<Computer>();
             using (SqlConnection conn = Connection)
             {
@@ -90,6 +91,97 @@ namespace BangazonWorkforceManagement.Controllers
 
                       
                         
+
+                        computers.Add(newComputer);
+                    }
+                }
+            }
+            return View(computers);
+        }
+        // GET: Computers
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public ActionResult Index(string userInput)
+        {
+            var userInputNotEmpty = !String.IsNullOrEmpty(userInput);
+            
+
+            var computers = new List<Computer>();
+
+            using (SqlConnection conn = Connection)
+            {
+                conn.Open();
+                using (SqlCommand cmd = conn.CreateCommand())
+                {
+                    if (userInputNotEmpty)
+                    {
+                        cmd.CommandText = @"
+                        SELECT c.Id, 
+                        c.PurchaseDate,
+                        c.DecommissionDate,
+                        c.Make,
+                        c.Manufacturer,
+                        e.FirstName,
+                        e.LastName
+                        FROM Computer c
+                        LEFT JOIN ComputerEmployee ce
+                        ON c.Id = ce.ComputerId
+                        LEFT JOIN Employee e
+                        ON ce.EmployeeId = e.Id
+                        WHERE ce.UnassignDate IS null
+                        AND ((c.Make LIKE '%' + @searchString + '%') OR (c.Manufacturer LIKE '%' + @searchString + '%'))
+                    ";
+                        cmd.Parameters.Add(new SqlParameter("@searchString", userInput));
+                    }
+                    else {
+                        cmd.CommandText = @"
+                        SELECT c.Id, 
+                        c.PurchaseDate,
+                        c.DecommissionDate,
+                        c.Make,
+                        c.Manufacturer,
+                        e.FirstName,
+                        e.LastName
+                        FROM Computer c
+                        LEFT JOIN ComputerEmployee ce
+                        ON c.Id = ce.ComputerId
+                        LEFT JOIN Employee e
+                        ON ce.EmployeeId = e.Id
+                        WHERE ce.UnassignDate IS null
+                    ";
+                    }
+
+                    
+                    SqlDataReader reader = cmd.ExecuteReader();
+
+
+                    while (reader.Read())
+                    {
+                        Computer newComputer = new Computer()
+                        {
+                            Id = reader.GetInt32(reader.GetOrdinal("Id")),
+                            PurchaseDate = reader.GetDateTime(reader.GetOrdinal("PurchaseDate")),
+                            Make = reader.GetString(reader.GetOrdinal("Make")),
+                            Manufacturer = reader.GetString(reader.GetOrdinal("Manufacturer"))
+                        };
+
+                        try
+                        {
+                            newComputer.DecommissionDate = reader.GetDateTime(reader.GetOrdinal("DecommissionDate"));
+                        }
+                        catch (SqlNullValueException)
+                        { }  //  DecommissionDate defaults to null
+
+                        try
+                        {
+                            newComputer.Employee = new Employee()
+                            {
+                                FirstName = reader.GetString(reader.GetOrdinal("FirstName")),
+                                LastName = reader.GetString(reader.GetOrdinal("LastName"))
+                            };
+                        }
+                        catch (SqlNullValueException)
+                        { }  //  DecommissionDate defaults to null
 
                         computers.Add(newComputer);
                     }

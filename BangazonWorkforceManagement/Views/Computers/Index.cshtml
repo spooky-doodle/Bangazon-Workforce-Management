@@ -9,6 +9,14 @@
 <p>
     <a asp-action="Create">Create New</a>
 </p>
+@using (Html.BeginForm())
+{
+    <p>
+        Find by Make / Model: @Html.TextBox("userInput")
+        <input type="submit" value="Search" />
+    </p>
+}
+
 <table class="table">
     <thead>
         <tr>
@@ -50,7 +58,7 @@
             </td>
             <td>
                 @Html.ActionLink("Details", "Details", new { id=item.Id }) |
-                @if (item.Employee == null || item.DecommissionDate != null) { @Html.ActionLink("Delete", "Delete", new {  id=item.Id   }) } 
+                @if (item.Employee == null && item.DecommissionDate == null) { @Html.ActionLink("Delete", "Delete", new {  id=item.Id   }) } 
                </td>
    
            </tr>
