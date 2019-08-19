@@ -39,32 +39,29 @@
         </tr>
     </thead>
     <tbody>
-        @foreach (var item in Model)
-        {
-            <tr>
-                <td>
-                    @if (item.Employee != null)
-                    {@Html.DisplayFor(modelItem => item.Employee.FullName);
-                }
-                </td>
-                <td>
-                    @Html.DisplayFor(modelItem => item.PurchaseDate)
-                </td>
-                <td>
-                    @Html.DisplayFor(modelItem => item.DecommissionDate)
-                </td>
-                <td>
-                    @Html.DisplayFor(modelItem => item.Make)
-                </td>
-                <td>
-                    @Html.DisplayFor(modelItem => item.Manufacturer)
-                </td>
-                <td>
-                    @Html.ActionLink("Edit", "Edit", new { id = item.Id }) |
-                    @Html.ActionLink("Details", "Details", new { id = item.Id }) |
-                    @Html.ActionLink("Delete", "Delete", new { id = item.Id })
-                </td>
-            </tr>
-        }
+@foreach (var item in Model) {
+        <tr>
+            <td>
+                @if (item.Employee != null ) { @Html.DisplayFor(modelItem => item.Employee.FullName); }
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.PurchaseDate)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.DecommissionDate)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.Make)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.Manufacturer)
+            </td>
+            <td>
+                @Html.ActionLink("Details", "Details", new { id=item.Id }) |
+                @if (item.Employee == null && item.DecommissionDate == null) { @Html.ActionLink("Delete", "Delete", new {  id=item.Id   }) } 
+               </td>
+   
+           </tr>
+}
     </tbody>
 </table>

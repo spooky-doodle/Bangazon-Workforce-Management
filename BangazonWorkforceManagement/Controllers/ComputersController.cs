@@ -48,13 +48,14 @@ namespace BangazonWorkforceManagement.Controllers
                         c.Make,
                         c.Manufacturer,
                         e.FirstName,
-                        e.LastName
+                        e.LastName,
+                        ce.UnassignDate
                         FROM Computer c
                         LEFT JOIN ComputerEmployee ce
                         ON c.Id = ce.ComputerId
                         LEFT JOIN Employee e
                         ON ce.EmployeeId = e.Id
-                        WHERE ce.UnassignDate IS null
+                        WHERE ce.UnassignDate IS NULL
                     ";
 
                     SqlDataReader reader = cmd.ExecuteReader();
@@ -87,6 +88,9 @@ namespace BangazonWorkforceManagement.Controllers
                         }
                         catch (SqlNullValueException)
                         { }  //  DecommissionDate defaults to null
+
+                      
+                        
 
                         computers.Add(newComputer);
                     }
@@ -347,12 +351,13 @@ namespace BangazonWorkforceManagement.Controllers
                     using (SqlCommand cmd = conn.CreateCommand())
                     {
                         cmd.CommandText = @"
-                        DELETE Computer                      
+                        UPDATE Computer
+                        SET DecommissionDate = @DecommissionDate
                         WHERE Id = @id
                         ";
 
                         cmd.Parameters.AddWithValue("@id", id);
-
+                        cmd.Parameters.Add(new SqlParameter("@DecommissionDate", SqlDbType.DateTime) { Value = DateTime.Today });
                         cmd.ExecuteNonQuery();
                     }
                 }

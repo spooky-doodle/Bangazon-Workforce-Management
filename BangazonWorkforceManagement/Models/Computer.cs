@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Threading.Tasks;
+using BangazonWorkforceManagement.Models;
 
 namespace BangazonAPI.Models
 {
@@ -22,5 +23,6 @@ namespace BangazonAPI.Models
         public string Manufacturer { get; set; }
 
         public Employee Employee { get; set; }
+
     }
 }
