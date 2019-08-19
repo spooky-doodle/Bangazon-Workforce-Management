@@ -156,7 +156,9 @@ namespace BangazonWorkforceManagement.Controllers
                     if (compt.Employee != null)
                     {
                         return compt.Employee.Id == id;
-                    } else { return false; };
+                    } else {
+                        return false;
+                    };
 
                 })
                 .Select(comp =>

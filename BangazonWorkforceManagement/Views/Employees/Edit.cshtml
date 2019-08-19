@@ -10,7 +10,7 @@
 <hr />
 <div class="row">
     <div class="row">
-        <div class="col-md-4">
+        <div class="col-md-8">
             <form asp-action="Edit">
                 <div asp-validation-summary="ModelOnly" class="text-danger"></div>
                 <div class="form-group">
@@ -33,7 +33,7 @@
                     <select asp-for="Employee.DepartmentId" asp-items="@Model.Departments"></select>
                 </div>
                 
-           <td>
+           <td id="dropdownthing">
                @Html.ListBoxFor(Model => Model.CompIds, Model.Comps, new { @class = "form-control"})
            </td>
         </tr>
