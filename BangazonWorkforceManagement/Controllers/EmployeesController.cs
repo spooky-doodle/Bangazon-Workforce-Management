@@ -140,7 +140,7 @@ namespace BangazonWorkforceManagement.Controllers
 
             var CompSelectItems = computers
                 .Select(comp => {
-                    viewModel.CompIds.Add(comp.Id.ToString());
+                    
                     return new SelectListItem
                     {
                         Text = $"{comp.Make} {comp.Manufacturer}",
@@ -152,11 +152,14 @@ namespace BangazonWorkforceManagement.Controllers
 
             var EmpCompSelectItems = EmpComputers
                 .Where(compt => compt.Employee.Id == id)
-                .Select(comp => new SelectListItem
-                {
-                    Text = $"{comp.Make} {comp.Manufacturer}",
-                    Value = comp.Id.ToString()
-                })
+                .Select(comp => {
+                        viewModel.CompIds.Add(comp.Id.ToString());
+                    return new SelectListItem
+                    {
+                        Text = $"{comp.Make} {comp.Manufacturer}",
+                        Value = comp.Id.ToString()
+                    };
+                    })
                 .ToList();
             
 
@@ -344,7 +347,17 @@ namespace BangazonWorkforceManagement.Controllers
                                 computer.DecommissionDate = reader.GetDateTime(reader.GetOrdinal("DecommissionDate"));
                             }
                             catch (SqlNullValueException) { }
-                            employee.Computers.Add(computer);
+
+                            var idToCompare = computer.Id;
+                            if (employee.Computers.Any(tr => tr.Id == idToCompare))
+                            {
+
+                            }
+                            else
+                            {
+                                employee.Computers.Add(computer);
+                            }
+                          
 
                         }
                         catch (SqlNullValueException)
@@ -608,10 +621,11 @@ namespace BangazonWorkforceManagement.Controllers
                         ce.EmployeeId
                         FROM Computer c
                         LEFT JOIN ComputerEmployee ce
+                        ON ce.ComputerId = c.Id
                         LEFT JOIN Employee e
                         ON e.Id = ce.EmployeeId
-                        ON ce.ComputerId = c.Id
-                        WHERE ce.EmployeeId = @id
+                        WHERE c.DecommissionDate IS NULL
+                        AND ce.EmployeeId = 3
                         OR ce.EmployeeId IS NULL
                                 
                     ";
