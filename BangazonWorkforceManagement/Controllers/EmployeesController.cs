@@ -134,34 +134,42 @@ namespace BangazonWorkforceManagement.Controllers
             });
 
             ////empComps
-            ///
 
             viewModel.CompIds = new List<string>();
 
             var CompSelectItems = computers
-                .Select(comp => {
-                    
-                    return new SelectListItem
-                    {
-                        Text = $"{comp.Make} {comp.Manufacturer}",
-                        Value = comp.Id.ToString()
-                    }; 
-                })
-                .ToList();
+                .Select(comp =>
+                {
 
-
-            var EmpCompSelectItems = EmpComputers
-                .Where(compt => compt.Employee.Id == id)
-                .Select(comp => {
-                        viewModel.CompIds.Add(comp.Id.ToString());
                     return new SelectListItem
                     {
                         Text = $"{comp.Make} {comp.Manufacturer}",
                         Value = comp.Id.ToString()
                     };
-                    })
+                })
                 .ToList();
-            
+
+
+            var EmpCompSelectItems = EmpComputers
+                .Where(compt =>
+                {
+                    if (compt.Employee != null)
+                    {
+                        return compt.Employee.Id == id;
+                    } else { return false; };
+
+                })
+                .Select(comp =>
+                {
+                    viewModel.CompIds.Add(comp.Id.ToString());
+                    return new SelectListItem
+                    {
+                        Text = $"{comp.Make} {comp.Manufacturer}",
+                        Value = comp.Id.ToString()
+                    };
+                })
+                .ToList();
+
 
             viewModel.Employee = employee;
             viewModel.Departments = DeptSelectItems;
@@ -357,7 +365,7 @@ namespace BangazonWorkforceManagement.Controllers
                             {
                                 employee.Computers.Add(computer);
                             }
-                          
+
 
                         }
                         catch (SqlNullValueException)
@@ -613,7 +621,7 @@ namespace BangazonWorkforceManagement.Controllers
                 using (SqlCommand cmd = conn.CreateCommand())
                 {
                     cmd.CommandText = @"
-                        SELECT DISTINCT c.Id, 
+                        SELECT DISTINCT c.Id AS ComputerId, 
                         c.PurchaseDate,
                         c.DecommissionDate,
                         c.Make,
@@ -625,7 +633,7 @@ namespace BangazonWorkforceManagement.Controllers
                         LEFT JOIN Employee e
                         ON e.Id = ce.EmployeeId
                         WHERE c.DecommissionDate IS NULL
-                        AND ce.EmployeeId = 3
+                        AND ce.EmployeeId = @id
                         OR ce.EmployeeId IS NULL
                                 
                     ";
@@ -638,7 +646,7 @@ namespace BangazonWorkforceManagement.Controllers
                     {
                         Computer newComputer = new Computer()
                         {
-                            Id = reader.GetInt32(reader.GetOrdinal("Id")),
+                            Id = reader.GetInt32(reader.GetOrdinal("ComputerId")),
                             PurchaseDate = reader.GetDateTime(reader.GetOrdinal("PurchaseDate")),
                             Make = reader.GetString(reader.GetOrdinal("Make")),
                             Manufacturer = reader.GetString(reader.GetOrdinal("Manufacturer"))
@@ -655,7 +663,7 @@ namespace BangazonWorkforceManagement.Controllers
 
                             Employee employee = new Employee()
                             {
-                                Id = reader.GetInt32(reader.GetOrdinal("Id"))
+                                Id = reader.GetInt32(reader.GetOrdinal("EmployeeId"))
                             };
                             newComputer.Employee = employee;
 
