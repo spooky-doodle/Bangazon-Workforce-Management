@@ -5,9 +5,13 @@ using System.Data.SqlTypes;
 using System.Linq;
 using System.Threading.Tasks;
 using BangazonAPI.Models;
+using BangazonWorkforceManagement.Models;
+using BangazonWorkforceManagement.Models.ViewModels;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using System.Data;
 
 namespace BangazonWorkforceManagement.Controllers
 {
@@ -37,12 +41,19 @@ namespace BangazonWorkforceManagement.Controllers
                 using (SqlCommand cmd = conn.CreateCommand())
                 {
                     cmd.CommandText = @"
-                        SELECT Id, 
-                        PurchaseDate,
-                        DecommissionDate,
-                        Make,
-                        Manufacturer
-                        FROM Computer
+                        SELECT c.Id, 
+                        c.PurchaseDate,
+                        c.DecommissionDate,
+                        c.Make,
+                        c.Manufacturer,
+                        e.FirstName,
+                        e.LastName
+                        FROM Computer c
+                        LEFT JOIN ComputerEmployee ce
+                        ON c.Id = ce.ComputerId
+                        LEFT JOIN Employee e
+                        ON ce.EmployeeId = e.Id
+                        WHERE ce.UnassignDate IS null
                     ";
 
                     SqlDataReader reader = cmd.ExecuteReader();
@@ -63,7 +74,18 @@ namespace BangazonWorkforceManagement.Controllers
                             newComputer.DecommissionDate = reader.GetDateTime(reader.GetOrdinal("DecommissionDate"));
                         }
                         catch (SqlNullValueException)
-                        { }  //  DecommissionDate defaults to null.
+                        { }  //  DecommissionDate defaults to null
+
+                        try
+                        {
+                            newComputer.Employee = new Employee()
+                            {
+                                FirstName = reader.GetString(reader.GetOrdinal("FirstName")),
+                                LastName = reader.GetString(reader.GetOrdinal("LastName"))
+                            };
+                        }
+                        catch (SqlNullValueException)
+                        { }  //  DecommissionDate defaults to null
 
                         computers.Add(newComputer);
                     }
@@ -131,41 +153,80 @@ namespace BangazonWorkforceManagement.Controllers
         // GET: Computers/Create
         public ActionResult Create()
         {
-            return View();
+            var viewModel = new ComputerEmployeeViewModel();
+            var employees = GetEmployees();
+           List<SelectListItem> selectItem = employees
+                .Select(employee => new SelectListItem
+                {
+                    Text = $"{employee.FirstName} {employee.LastName}",
+                    Value = employee.Id.ToString()
+                })
+                .ToList();
+ 
+
+            selectItem.Insert(0, new SelectListItem
+            {
+                Text = "Choose Employee...",
+                Value = "0"
+            });
+            viewModel.Employees = selectItem;
+
+            return View(viewModel);
         }
 
         // POST: Computers/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public ActionResult Create(IFormCollection collection)
+        public ActionResult Create(ComputerEmployeeViewModel computerEmployees)
         {
             try
             {
-                // TODO: Add insert logic here
+                using (SqlConnection conn = Connection)
+                {
+                    conn.Open();
+                    int computerId = 0;
 
-                return RedirectToAction(nameof(Index));
-            }
-            catch
-            {
-                return View();
-            }
-        }
+                    using (SqlCommand cmd = conn.CreateCommand())
+                    {
+                        cmd.CommandText = @"
+                    INSERT INTO Computer(
+                        Make,
+                        Manufacturer,
+                        PurchaseDate
+                        )
+                        OUTPUT INSERTED.Id
+                        Values(   
+                        @Make, 
+                        @Manufacturer,
+                        @PurchaseDate)";
 
-        // GET: Computers/Edit/5
-        public ActionResult Edit(int id)
-        {
-            return View();
-        }
+                        cmd.Parameters.AddWithValue("@Make", computerEmployees.Computer.Make);
+                        cmd.Parameters.AddWithValue("@Manufacturer", computerEmployees.Computer.Manufacturer);
+                        cmd.Parameters.AddWithValue("@PurchaseDate", computerEmployees.Computer.PurchaseDate);
+                        cmd.Parameters.AddWithValue("@ComputerId", computerEmployees.Computer.Id);
+                        computerId = (Int32)cmd.ExecuteScalar();
 
-        // POST: Computers/Edit/5
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public ActionResult Edit(int id, IFormCollection collection)
-        {
-            try
-            {
-                // TODO: Add update logic here
+                    }
+                    if(computerEmployees.EmployeeId > 0)
+                    { using (SqlCommand cmd = conn.CreateCommand())
+                    {
+                        cmd.CommandText = @"INSERT INTO ComputerEmployee(
+                           ComputerId,
+                           EmployeeId,
+                           AssignDate
+                           ) Values(
+                           @ComputerId,
+                           @EmployeeId,
+                           @AssignDate
+                           )";
+                        cmd.Parameters.AddWithValue("@EmployeeId", computerEmployees.EmployeeId);
+                        cmd.Parameters.AddWithValue("@ComputerId", computerId);
+                        cmd.Parameters.Add(new SqlParameter("@AssignDate", SqlDbType.DateTime) { Value = DateTime.Today });
 
+                        cmd.ExecuteNonQuery();
+                    } }
+
+                }
                 return RedirectToAction(nameof(Index));
             }
             catch
@@ -211,5 +272,34 @@ namespace BangazonWorkforceManagement.Controllers
                 return View();
             }
         }
+        private List<Employee> GetEmployees()
+        {
+            using (SqlConnection conn = Connection)
+            {
+                conn.Open();
+                using (SqlCommand cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = "SELECT Id, FirstName, LastName FROM Employee";
+                    SqlDataReader reader = cmd.ExecuteReader();
+
+                    List<Employee> employees = new List<Employee>();
+                    while (reader.Read())
+                    {
+                        employees.Add(new Employee
+                        {
+                            Id = reader.GetInt32(reader.GetOrdinal("Id")),
+                            FirstName = reader.GetString(reader.GetOrdinal("FirstName")),
+                            LastName = reader.GetString(reader.GetOrdinal("LastName")),
+                        });
+                    }
+
+                    reader.Close();
+
+                    return employees;
+                }
+            }
+        }
     }
 }
+
+   
