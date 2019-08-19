@@ -112,14 +112,12 @@ namespace BangazonWorkforceManagement.Controllers
         // GET: Employee/Edit/5
         public ActionResult Edit(int id)
         {
-            var employee = GetOneEmployee(id);
-            var departments = GetAllDepartments();
-            var computers = GetSpecificComputers(id);
-            var EmpComputers = GetSpecificComputers(id);
-
-            var viewModel = new EmployeeEditViewModel();
-
-            var DeptSelectItems = departments
+            var viewModel = new EmployeeEditViewModel
+            {
+                Employee = GetOneEmployee(id),
+                CompIds = new List<string>()
+            };
+            viewModel.Departments = GetAllDepartments()
                 .Select(dept => new SelectListItem
                 {
                     Text = dept.Name,
@@ -127,30 +125,32 @@ namespace BangazonWorkforceManagement.Controllers
                 })
                 .ToList();
 
-            DeptSelectItems.Insert(0, new SelectListItem
+            viewModel.Departments.Insert(0, new SelectListItem
             {
                 Text = "Choose Department...",
                 Value = "0"
             });
 
-            ////empComps
-            ///
 
-            viewModel.CompIds = new List<string>();
+            var computers = GetSpecificComputers(id);
 
-            var CompSelectItems = computers
-                .Select(comp => {
+            viewModel.Computers = computers
+                .Select(comp =>
+                {
                     viewModel.CompIds.Add(comp.Id.ToString());
                     return new SelectListItem
                     {
                         Text = $"{comp.Make} {comp.Manufacturer}",
                         Value = comp.Id.ToString()
-                    }; 
+                    };
                 })
                 .ToList();
 
 
-            var EmpCompSelectItems = EmpComputers
+            ////empComps
+            ///
+
+            viewModel.EmpComps = computers
                 .Where(compt => compt.Employee.Id == id)
                 .Select(comp => new SelectListItem
                 {
@@ -158,12 +158,8 @@ namespace BangazonWorkforceManagement.Controllers
                     Value = comp.Id.ToString()
                 })
                 .ToList();
-            
 
-            viewModel.Employee = employee;
-            viewModel.Departments = DeptSelectItems;
-            viewModel.Computers = CompSelectItems;
-            viewModel.EmpComps = EmpCompSelectItems;
+
             viewModel.Comps = new MultiSelectList(viewModel.Computers, "Value", "Text", viewModel.EmpComps);
             return View(viewModel);
         }
@@ -171,8 +167,21 @@ namespace BangazonWorkforceManagement.Controllers
         // POST: Employee/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public ActionResult Edit(int id, EmployeeEditViewModel emp)
+        public async Task<IActionResult> Edit(int id, EmployeeEditViewModel model)
         {
+            var computers = GetSpecificComputers(id);
+
+            var newAssignments = computers
+                    .Where(comp => comp.Employee == null 
+                    && model.CompIds.Contains(comp.Id.ToString()));
+
+            var unassignments = computers
+                .Where(comp => comp.Employee.Id == id 
+                && model.CompIds.Contains(comp.Id.ToString()) == false);
+
+            var tasks = newAssignments.Select(async comp => await AssignComputer(id, comp.Id)).ToList();
+            tasks.AddRange(unassignments.Select(async comp => await UnassignComputer(id, comp.Id)));
+
             try
             {
                 using (SqlConnection conn = Connection)
@@ -190,14 +199,15 @@ namespace BangazonWorkforceManagement.Controllers
                                             WHERE Id = @id
                                             ";
 
-                        //cmd.Parameters.Add(new SqlParameter("@id", id));
-                        //cmd.Parameters.Add(new SqlParameter("@firstName", employee.FirstName));
-                        //cmd.Parameters.Add(new SqlParameter("@lastName", employee.LastName));
-                        //cmd.Parameters.Add(new SqlParameter("@departmentId", employee.DepartmentId));
-                        //cmd.Parameters.Add(new SqlParameter("@isSupervisor", employee.IsSupervisor));
-                        //cmd.ExecuteNonQuery();
+                        cmd.Parameters.Add(new SqlParameter("@id", id));
+                        cmd.Parameters.Add(new SqlParameter("@firstName", model.Employee.FirstName));
+                        cmd.Parameters.Add(new SqlParameter("@lastName", model.Employee.LastName));
+                        cmd.Parameters.Add(new SqlParameter("@departmentId", model.Employee.DepartmentId));
+                        cmd.Parameters.Add(new SqlParameter("@isSupervisor", model.Employee.IsSupervisor));
+                        cmd.ExecuteNonQuery();
                     }
                 }
+                await Task.WhenAll(tasks);
                 return RedirectToAction(nameof(Index));
             }
             catch
@@ -590,6 +600,47 @@ namespace BangazonWorkforceManagement.Controllers
                 }
             }
             return computers;
+        }
+
+        public async Task AssignComputer(int employeeId, int computerId)
+        {
+            using (SqlConnection conn = Connection)
+            {
+                await conn.OpenAsync();
+                using (SqlCommand cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = "INSERT INTO ComputerEmployee " +
+                        "(ComputerId, EmployeeId, AssignDate) VALUES " +
+                        "(@computerId, @employeeId, @assignDate)";
+                    cmd.Parameters.AddWithValue("@computerId", computerId);
+                    cmd.Parameters.AddWithValue("@employeeId", employeeId);
+                    cmd.Parameters.AddWithValue("@assignDate", DateTime.Now);
+                    await cmd.ExecuteNonQueryAsync();
+
+                }
+            }
+        }
+
+        public async Task UnassignComputer(int employeeId, int computerId)
+        {
+            using (SqlConnection conn = Connection)
+            {
+                await conn.OpenAsync();
+                using (SqlCommand cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = "UPDATE ComputerEmployee SET " +
+                        "UnassignDate = @unassignDate " +
+                        "WHERE Id = (SELECT Id FROM ComputerEmployee " +
+                        "WHERE EmployeeId = @employeeId " +
+                        "AND ComputerId = @computerId " +
+                        "AND UnassignDate IS NULL)";
+                    cmd.Parameters.AddWithValue("@computerId", computerId);
+                    cmd.Parameters.AddWithValue("@employeeId", employeeId);
+                    cmd.Parameters.AddWithValue("@unassignDate", DateTime.Now);
+                    await cmd.ExecuteNonQueryAsync();
+
+                }
+            }
         }
         public List<Computer> GetSpecificComputers(int id)
         {
