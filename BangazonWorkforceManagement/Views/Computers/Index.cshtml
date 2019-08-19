@@ -34,7 +34,7 @@
 @foreach (var item in Model) {
         <tr>
             <td>
-                @if (item.Employee != null) { @Html.DisplayFor(modelItem => item.Employee.FullName); }
+                @if (item.Employee != null ) { @Html.DisplayFor(modelItem => item.Employee.FullName); }
             </td>
             <td>
                 @Html.DisplayFor(modelItem => item.PurchaseDate)
@@ -50,7 +50,7 @@
             </td>
             <td>
                 @Html.ActionLink("Details", "Details", new { id=item.Id }) |
-                @if (item.Employee == null) { @Html.ActionLink("Delete", "Delete", new {  id=item.Id   }) } 
+                @if (item.Employee == null || item.DecommissionDate != null) { @Html.ActionLink("Delete", "Delete", new {  id=item.Id   }) } 
                </td>
    
            </tr>
