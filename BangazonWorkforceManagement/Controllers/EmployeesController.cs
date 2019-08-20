@@ -330,7 +330,6 @@ namespace BangazonWorkforceManagement.Controllers
                                         LEFT JOIN TrainingProgram tp
                                         ON tp.Id = et.TrainingProgramId
                                         WHERE ce.UnassignDate IS NULL
-                                        AND c.DecommissionDate IS NULL
                                         AND e.Id = @id
                                       ";
 
