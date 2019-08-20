@@ -112,18 +112,117 @@ namespace BangazonWorkforceManagement.Controllers
         // GET: Employee/Edit/5
         public ActionResult Edit(int id)
         {
-            return View();
+            var viewModel = new EmployeeEditViewModel
+            {
+                Employee = GetOneEmployee(id),
+                CompIds = new List<string>()
+            };
+            viewModel.Departments = GetAllDepartments()
+                .Select(dept => new SelectListItem
+                {
+                    Text = dept.Name,
+                    Value = dept.Id.ToString()
+                })
+                .ToList();
+
+            viewModel.Departments.Insert(0, new SelectListItem
+            {
+                Text = "Choose Department...",
+                Value = "0"
+            });
+
+            ////empComps
+            ///
+
+            var computers = GetSpecificComputers(id);
+      
+
+
+            viewModel.Computers = computers
+                .Select(comp =>
+                {
+                    //viewModel.CompIds.Add(comp.Id.ToString());
+                    return new SelectListItem
+                    {
+                        Text = $"{comp.Make} {comp.Manufacturer}",
+                        Value = comp.Id.ToString()
+                    };
+                })
+                .ToList();
+
+            viewModel.Computers.Insert(0, new SelectListItem
+            {
+                Text = "Choose A Computer...",
+                Value = "0"
+            });
+
+
+            ////empComps
+            ///
+
+            viewModel.EmpComps = computers
+                .Where(compt => compt.Employee != null)
+                .Select(comp =>
+                {
+                    viewModel.CompIds.Add(comp.Id.ToString());
+                    return new SelectListItem
+                    {
+                        Text = $"{comp.Make} {comp.Manufacturer}",
+                        Value = comp.Id.ToString()
+                    };
+                })
+                .ToList();
+
+            
+
+            viewModel.Comps = new MultiSelectList(viewModel.Computers, "Value", "Text", viewModel.EmpComps);
+            return View(viewModel);
         }
 
         // POST: Employee/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public ActionResult Edit(int id, IFormCollection collection)
+        public async Task<IActionResult> Edit(int id, EmployeeEditViewModel model)
         {
+            var computers = GetSpecificComputers(id);
+
+            var newAssignments = computers
+                    .Where(comp => comp.Employee == null
+                     && model.CompIds.Contains(comp.Id.ToString())).ToList();
+
+            var unassignments = computers
+                .Where(comp => comp.Employee != null
+                && model.CompIds.Contains(comp.Id.ToString()) == false).ToList();
+
+            var tasks = newAssignments.Select(async comp => await AssignComputer(id, comp.Id)).ToList();
+            tasks.AddRange(unassignments.Select(async comp => await UnassignComputer(id, comp.Id)));
+
             try
             {
-                // TODO: Add update logic here
+                using (SqlConnection conn = Connection)
+                {
+                    conn.Open();
+                    using (SqlCommand cmd = conn.CreateCommand())
+                    {
+                        cmd.CommandText = @"
+                                            UPDATE Employee
+                                            SET 
+                                                FirstName = @firstName,
+                                                LastName = @lastName,
+                                                DepartmentId = @departmentId,
+                                                IsSupervisor = @isSupervisor
+                                            WHERE Id = @id
+                                            ";
 
+                        cmd.Parameters.Add(new SqlParameter("@id", id));
+                        cmd.Parameters.Add(new SqlParameter("@firstName", model.Employee.FirstName));
+                        cmd.Parameters.Add(new SqlParameter("@lastName", model.Employee.LastName));
+                        cmd.Parameters.Add(new SqlParameter("@departmentId", model.Employee.DepartmentId));
+                        cmd.Parameters.Add(new SqlParameter("@isSupervisor", model.Employee.IsSupervisor));
+                        cmd.ExecuteNonQuery();
+                    }
+                }
+                await Task.WhenAll(tasks);
                 return RedirectToAction(nameof(Index));
             }
             catch
@@ -154,7 +253,7 @@ namespace BangazonWorkforceManagement.Controllers
         // POST: Employees/Assign/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Assign(int id, EmployeeTraining assign )
+        public async Task<IActionResult> Assign(int id, EmployeeTraining assign)
         {
             using (SqlConnection conn = Connection)
             {
@@ -174,7 +273,7 @@ namespace BangazonWorkforceManagement.Controllers
             }
 
 
-            return RedirectToAction(nameof(Details), new {id = id });
+            return RedirectToAction(nameof(Details), new { id = id });
         }
 
         // POST: Employee/Delete/5
@@ -209,6 +308,7 @@ namespace BangazonWorkforceManagement.Controllers
                                                e.DepartmentId,
                                                e.IsSupervisor,
                                                d.Name,
+                                               c.Id AS ComputerId,
                                                c.Make, 
                                                c.Manufacturer, 
                                                c.PurchaseDate, 
@@ -260,7 +360,7 @@ namespace BangazonWorkforceManagement.Controllers
                         {
                             Computer computer = new Computer()
                             {
-                                Id = reader.GetInt32(reader.GetOrdinal("Id")),
+                                Id = reader.GetInt32(reader.GetOrdinal("ComputerId")),
                                 Make = reader.GetString(reader.GetOrdinal("Make")),
                                 Manufacturer = reader.GetString(reader.GetOrdinal("Manufacturer")),
                                 PurchaseDate = reader.GetDateTime(reader.GetOrdinal("PurchaseDate"))
@@ -268,9 +368,21 @@ namespace BangazonWorkforceManagement.Controllers
                             try
                             {
                                 computer.DecommissionDate = reader.GetDateTime(reader.GetOrdinal("DecommissionDate"));
+                                
                             }
-                            catch (SqlNullValueException){}
-                            employee.Computers.Add(computer);
+                            catch (SqlNullValueException) { }
+
+                            var idToCompare = computer.Id;
+                            if (employee.Computers
+                                .Any(tr => tr.Id == idToCompare))
+                            {
+
+                            }
+                            else
+                            {
+                                employee.Computers.Add(computer);
+                            }
+
 
                         }
                         catch (SqlNullValueException)
@@ -279,7 +391,7 @@ namespace BangazonWorkforceManagement.Controllers
                         }
                         try
                         {
-                           
+
                             TrainingProgram training = new TrainingProgram()
                             {
                                 Id = reader.GetInt32(reader.GetOrdinal("TrainingId")),
@@ -293,8 +405,9 @@ namespace BangazonWorkforceManagement.Controllers
 
                             if (employee.Trainings.Any(tr => tr.Id == idToCheck))
                             {
-                                
-                            } else
+
+                            }
+                            else
                             {
                                 employee.Trainings.Add(training);
                             }
@@ -387,13 +500,14 @@ namespace BangazonWorkforceManagement.Controllers
                 Task.Run(async () => employeePrograms = await GetEmployeeTrainingPrograms(id))
             };
             await Task.WhenAll(tasks);
-            List<TrainingProgram> availablePrograms = allPrograms.Where(prog => {
+            List<TrainingProgram> availablePrograms = allPrograms.Where(prog =>
+            {
                 return employeePrograms.Find(empProg => empProg.Id == prog.Id) == null;
-                }).ToList();
+            }).ToList();
 
             return availablePrograms;
 
-            
+
         }
 
         private List<SelectListItem> CreateTrainingSelections(List<TrainingProgram> progs)
@@ -468,6 +582,159 @@ namespace BangazonWorkforceManagement.Controllers
                 }
             }
             return departments;
+        }
+
+        public List<Computer> GetAllComputersForOneEmployee(int id)
+        {
+            var computers = new List<Computer>();
+            using (SqlConnection conn = Connection)
+            {
+                conn.Open();
+                using (SqlCommand cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = @"SELECT 
+                                            c.Id, 
+                                            c.PurchaseDate, 
+                                            c.DecommissionDate, 
+                                            c.Make, 
+                                            c.Manufacturer, 
+                                            ce.Id AS CEId, 
+                                            ce.EmployeeId, 
+                                            ce.AssignDate, 
+                                            ce.UnassignDate, 
+                                            ce.ComputerId
+                                        FROM Computer c
+                                        LEFT JOIN ComputerEmployee ce
+                                        ON ce.ComputerId = c.Id
+                                        WHERE ce.EmployeeId = @id
+                                        AND c.DecommissionDate IS NULL
+                                        AND ce.UnassignDate IS NULL
+                                      ";
+
+                    cmd.Parameters.Add(new SqlParameter("@id", id));
+                    SqlDataReader reader = cmd.ExecuteReader();
+
+                    while (reader.Read())
+                    {
+                        computers.Add(new Computer()
+                        {
+                            Id = reader.GetInt32(reader.GetOrdinal("Id")),
+                            Make = reader.GetString(reader.GetOrdinal("Make")),
+                            Manufacturer = reader.GetString(reader.GetOrdinal("Manufacturer")),
+                            PurchaseDate = reader.GetDateTime(reader.GetOrdinal("PurchaseDate")),
+                        });
+                    }
+                    reader.Close();
+                }
+            }
+            return computers;
+        }
+
+        public async Task AssignComputer(int employeeId, int computerId)
+        {
+            using (SqlConnection conn = Connection)
+            {
+                await conn.OpenAsync();
+                using (SqlCommand cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = "INSERT INTO ComputerEmployee " +
+                        "(ComputerId, EmployeeId, AssignDate) VALUES " +
+                        "(@computerId, @employeeId, @assignDate)";
+                    cmd.Parameters.AddWithValue("@computerId", computerId);
+                    cmd.Parameters.AddWithValue("@employeeId", employeeId);
+                    cmd.Parameters.AddWithValue("@assignDate", DateTime.Now);
+                    await cmd.ExecuteNonQueryAsync();
+
+                }
+            }
+        }
+
+        public async Task UnassignComputer(int employeeId, int computerId)
+        {
+            using (SqlConnection conn = Connection)
+            {
+                await conn.OpenAsync();
+                using (SqlCommand cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = "UPDATE ComputerEmployee SET " +
+                        "UnassignDate = @unassignDate " +
+                        "WHERE Id = (SELECT Id FROM ComputerEmployee " +
+                        "WHERE EmployeeId = @employeeId " +
+                        "AND ComputerId = @computerId " +
+                        "AND UnassignDate IS NULL)";
+                    cmd.Parameters.AddWithValue("@computerId", computerId);
+                    cmd.Parameters.AddWithValue("@employeeId", employeeId);
+                    cmd.Parameters.AddWithValue("@unassignDate", DateTime.Now);
+                    await cmd.ExecuteNonQueryAsync();
+
+                }
+            }
+        }
+        public List<Computer> GetSpecificComputers(int id)
+        {
+            var computers = new List<Computer>();
+            using (SqlConnection conn = Connection)
+            {
+                conn.Open();
+                using (SqlCommand cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = @"
+                        SELECT DISTINCT c.Id AS ComputerId, 
+                        c.PurchaseDate,
+                        c.DecommissionDate,
+                        c.Make,
+                        c.Manufacturer,
+                        ce.EmployeeId
+                        FROM Computer c
+                        LEFT JOIN ComputerEmployee ce
+                        ON ce.ComputerId = c.Id
+                        LEFT JOIN Employee e
+                        ON e.Id = ce.EmployeeId
+                        WHERE c.DecommissionDate IS NULL
+                        AND ce.EmployeeId = @id
+                        OR ce.EmployeeId IS NULL
+                                
+                    ";
+
+                    cmd.Parameters.Add(new SqlParameter("@id", id));
+                    SqlDataReader reader = cmd.ExecuteReader();
+
+
+                    while (reader.Read())
+                    {
+                        Computer newComputer = new Computer()
+                        {
+                            Id = reader.GetInt32(reader.GetOrdinal("ComputerId")),
+                            PurchaseDate = reader.GetDateTime(reader.GetOrdinal("PurchaseDate")),
+                            Make = reader.GetString(reader.GetOrdinal("Make")),
+                            Manufacturer = reader.GetString(reader.GetOrdinal("Manufacturer"))
+                        };
+
+                        try
+                        {
+                            newComputer.DecommissionDate = reader.GetDateTime(reader.GetOrdinal("DecommissionDate"));
+                        }
+                        catch (SqlNullValueException)
+                        { };  //  DecommissionDate defaults to null.
+                        try
+                        {
+
+                            Employee employee = new Employee()
+                            {
+                                Id = reader.GetInt32(reader.GetOrdinal("EmployeeId"))
+                            };
+                            newComputer.Employee = employee;
+
+                        }
+                        catch (Exception ex)
+                        { }
+
+                        computers.Add(newComputer);
+                    }
+                    reader.Close();
+                }
+            }
+            return computers;
         }
     }
 }
